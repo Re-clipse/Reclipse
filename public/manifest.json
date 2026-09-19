@@ -1,0 +1,12 @@
+{
+  "name": "Reclipse",
+  "short_name": "Reclipse",
+  "description": "Turn your lecture notes into flashcards and quizzes built on active recall.",
+  "start_url": "/decks",
+  "display": "standalone",
+  "background_color": "#FFFFFF",
+  "theme_color": "#6D28D9",
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
