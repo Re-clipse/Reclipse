@@ -10,8 +10,12 @@ const REMINDER_WINDOW_DAYS = 2;
 const FROM = 'Reclipse <onboarding@resend.dev>';
 
 export async function GET(request) {
+  const secret = process.env.CRON_SECRET;
+  if (!secret?.trim()) {
+    return Response.json({ error: 'Reminders are not configured.' }, { status: 503 });
+  }
   const auth = request.headers.get('authorization');
-  if (process.env.CRON_SECRET && auth !== `Bearer ${process.env.CRON_SECRET}`) {
+  if (auth !== `Bearer ${secret}`) {
     return Response.json({ error: 'Unauthorized' }, { status: 401 });
   }
 

@@ -1,10 +1,10 @@
 import pdfParse from 'pdf-parse';
 import Anthropic from '@anthropic-ai/sdk';
+import { requireAIUser, reserveAIUsage, RequestError, aiErrorResponse } from '@/lib/aiRequest';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
 
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 const MAX_FILE_BYTES = 15 * 1024 * 1024;   // 15MB
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;   // Anthropic image limit
@@ -40,6 +40,7 @@ async function parsePdfWithRetry(buffer) {
 
 /** Photo of notes / whiteboard -> text, via vision. */
 async function transcribeImage(buffer, mediaType) {
+  const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY, maxRetries: 0, timeout: 60000 });
   const res = await anthropic.messages.create({
     model: 'claude-sonnet-5',
     max_tokens: 4000,
@@ -65,10 +66,22 @@ Output only the transcription, no preamble.`,
 }
 
 export async function POST(request) {
+  let user;
+  try {
+    user = await requireAIUser(request);
+  } catch (error) {
+    return aiErrorResponse(error);
+  }
+
   try {
     const formData = await request.formData();
     const file = formData.get('file');
-    if (!file) return Response.json({ error: 'No file provided.' }, { status: 400 });
+    if (!file || typeof file.arrayBuffer !== 'function') {
+      return Response.json({ error: 'Please provide a file.' }, { status: 400 });
+    }
+    if (file.size > MAX_FILE_BYTES) {
+      return Response.json({ error: 'File is too large (max 15MB).' }, { status: 400 });
+    }
 
     const buffer = Buffer.from(await file.arrayBuffer());
     if (buffer.length > MAX_FILE_BYTES) {
@@ -94,6 +107,7 @@ export async function POST(request) {
         : name.endsWith('.png') ? 'image/png'
         : name.endsWith('.webp') ? 'image/webp'
         : name.endsWith('.gif') ? 'image/gif' : 'image/jpeg';
+      await reserveAIUsage(user.id, 'image');
       text = tidy(await transcribeImage(buffer, mediaType));
       source = 'image';
     } else {
@@ -113,7 +127,7 @@ export async function POST(request) {
 
     return Response.json({ text, truncated, source });
   } catch (err) {
-    console.error('extract error:', err);
+    if (err instanceof RequestError) return aiErrorResponse(err);
     const msg = String(err?.message || '');
     if (msg.includes('credit balance')) {
       return Response.json(

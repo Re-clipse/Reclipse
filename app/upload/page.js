@@ -7,6 +7,7 @@ import { Suspense } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { useAuth } from '@/lib/useAuth';
 import Mascot from '@/components/Mascot';
+import { generateStudyDraft, persistStudyDraft } from '@/lib/studySetFlow.mjs';
 
 const MAX_CHARS = 24000;
 function UploadInner() {
@@ -16,6 +17,7 @@ function UploadInner() {
   const onboarding = params.get('onboarding') === '1';
   const { user, loading: authLoading } = useAuth();
   const inputRef = useRef(null);
+  const workingRef = useRef(false);
 
   const [title, setTitle] = useState('');
   const [text, setText] = useState('');
@@ -23,10 +25,19 @@ function UploadInner() {
   const [dragging, setDragging] = useState(false);
   const [extracting, setExtracting] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [phase, setPhase] = useState('Building your study set');
+  const [pendingDraft, setPendingDraft] = useState(null);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [courses, setCourses] = useState([]);
   const [courseId, setCourseId] = useState(preCourse);
+
+  useEffect(() => {
+    if (!pendingDraft) return;
+    const warnBeforeLeaving = (event) => { event.preventDefault(); event.returnValue = ''; };
+    window.addEventListener('beforeunload', warnBeforeLeaving);
+    return () => window.removeEventListener('beforeunload', warnBeforeLeaving);
+  }, [pendingDraft]);
 
   useEffect(() => {
     if (!user) return;
@@ -37,9 +48,16 @@ function UploadInner() {
     if (!file) return;
     setFileName(file.name); setError(''); setNotice(''); setExtracting(true);
     try {
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !session?.access_token) {
+        setError('Please log in again to upload a file.'); setFileName(''); return;
+      }
       const body = new FormData();
       body.append('file', file);
-      const res = await fetch('/api/extract-pdf', { method: 'POST', body });
+      const res = await fetch('/api/extract-pdf', {
+        method: 'POST', body,
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
       const data = await res.json();
       if (!res.ok) { setError(data.error || 'Could not read that file.'); setFileName(''); return; }
       setText(data.text);
@@ -51,51 +69,46 @@ function UploadInner() {
     } finally { setExtracting(false); }
   }
 
+  async function finishSave(draft) {
+    const { data: { session } } = await supabase.auth.getSession();
+    const id = await persistStudyDraft(supabase, draft, session);
+    if (onboarding) {
+      router.push(draft.material.quiz.length ? `/quiz?deck=${id}&onboarding=1` : '/decks');
+    } else {
+      router.push(`/deck/${id}`);
+    }
+  }
+
+  async function retrySave() {
+    if (workingRef.current || !pendingDraft) return;
+    workingRef.current = true;
+    setLoading(true); setError(''); setPhase('Saving your study set');
+    try { await finishSave(pendingDraft); }
+    catch (err) { setError(err.message || 'Saving failed. Please retry.'); }
+    finally { workingRef.current = false; setLoading(false); }
+  }
+
   async function handleGenerate(e) {
     e.preventDefault();
+    if (workingRef.current || pendingDraft) return;
     setError('');
     if (text.trim().length < 50) { setError('Add a bit more text first — we need a few sentences.'); return; }
+    workingRef.current = true;
     setLoading(true);
+    setPhase('Building your study set');
+    let draft;
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) { router.replace('/login?next=/upload'); return; }
 
-      const res = await fetch('/api/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
-        body: JSON.stringify({ text }),
-      });
-      const data = await res.json();
-      if (!res.ok) { setError(data.error || 'Something went wrong.'); return; }
-
-      const { data: deck, error: deckError } = await supabase.from('decks').insert({
-        user_id: session.user.id,
-        title: title.trim() || 'Untitled deck',
-        source_text: text,
-        summary: data.summary || null,
-        course_id: courseId || null,
-      }).select().single();
-      if (deckError) throw deckError;
-
-      await supabase.from('flashcards').insert(data.flashcards.map((f, i) => ({
-        deck_id: deck.id, question: f.question, answer: f.answer,
-        card_type: f.type === 'cloze' ? 'cloze' : 'basic', position: i,
-      })));
-      if (data.quiz?.length) {
-        await supabase.from('quiz_questions').insert(data.quiz.map((q) => ({
-          deck_id: deck.id, question: q.question, options: q.options,
-          correct_index: q.correctIndex, explanation: q.explanation,
-        })));
-      }
-      if (onboarding) {
-        if (data.quiz?.length) router.push(`/quiz?deck=${deck.id}&onboarding=1`);
-        else router.push('/decks'); // no quiz came back — skip step 3 rather than dead-end
-      } else {
-        router.push(`/deck/${deck.id}`);
-      }
-    } catch {
-      setError('We generated your set but could not save it. Please try again.');
-    } finally { setLoading(false); }
+      draft = await generateStudyDraft({ session, title, text, courseId });
+      setPendingDraft(draft);
+      setPhase('Saving your study set');
+      await finishSave(draft);
+    } catch (err) {
+      setError(draft ? 'Your study set is ready, but saving failed. Keep this page open and retry saving.'
+        : err.message || 'Could not generate your study set. Please try again later.');
+    } finally { workingRef.current = false; setLoading(false); }
   }
 
   if (authLoading) return <main className="page"><div className="skeleton" style={{ height: 420 }} /></main>;
@@ -107,11 +120,33 @@ function UploadInner() {
           <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 'var(--s-4)' }}>
             <Mascot mood="thinking" size={100} float />
           </div>
-          <h2 style={{ fontSize: 'var(--text-xl)' }}>Building your study set</h2>
+          <h2 style={{ fontSize: 'var(--text-xl)' }}>{phase}</h2>
           <p className="working__step" style={{ marginTop: 'var(--s-3)' }}>
-            Reading your notes, writing recall questions and a quiz — usually 10–20 seconds.
+            {pendingDraft ? 'Keeping your cards and quiz together.' : 'Reading your notes, writing recall questions and a quiz — usually 10–20 seconds.'}
           </p>
         </div>
+      </main>
+    );
+  }
+
+  if (pendingDraft) {
+    return (
+      <main className="page">
+        <PageHeader accent="blue" icon={ICONS.upload} title="Your study set is ready"
+          subtitle="One more step: save it to your decks." />
+        <section className="card stack" style={{ gap: 'var(--s-4)' }} aria-label="Save study set">
+          <h2>{pendingDraft.title}</h2>
+          <p>{pendingDraft.material.flashcards.length} flashcards and {pendingDraft.material.quiz.length} quiz questions.</p>
+          {error && <div className="alert alert--error" role="alert">{error}</div>}
+          <p>Keep this page open. Retrying saves this study set without using another AI attempt.</p>
+          <div className="row actions-sm-stack">
+            <button className="btn btn--primary btn--lg" onClick={retrySave}>Retry saving</button>
+            <a className="btn btn--ghost" href="/login" target="_blank" rel="noopener noreferrer">Sign in in another tab</a>
+          </div>
+          <button className="btn btn--ghost" onClick={() => { setPendingDraft(null); setError(''); }}>
+            Discard draft and start over
+          </button>
+        </section>
       </main>
     );
   }
@@ -164,7 +199,7 @@ function UploadInner() {
 
         <div className="field">
           <label className="label" htmlFor="title">Deck name</label>
-          <input id="title" className="input" value={title} onChange={(e) => setTitle(e.target.value)}
+          <input id="title" className="input" maxLength={200} value={title} onChange={(e) => setTitle(e.target.value)}
                  placeholder="e.g. BI110 — Cell Respiration" />
         </div>
 
@@ -197,7 +232,7 @@ function UploadInner() {
           </button>
           <a href="/decks" className="btn btn--ghost btn--lg">Cancel</a>
         </div>
-        <p className="small muted">Up to 5 study sets per day.</p>
+        <p className="small muted">Daily AI limits reset at midnight UTC. Failed AI requests may count; retrying a save does not.</p>
       </form>
     </main>
   );
