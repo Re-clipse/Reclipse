@@ -38,6 +38,9 @@ ANTHROPIC_API_KEY=...               # your own
 RESEND_API_KEY=...                  # your own
 STRIPE_SECRET_KEY=...               # your own test key (optional)
 DAILY_GENERATION_LIMIT=5
+DAILY_IMAGE_LIMIT=10
+DAILY_SYLLABUS_LIMIT=5
+CRON_SECRET=...                    # random secret; must match the scheduler's Bearer token
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
 ```
 
@@ -46,6 +49,25 @@ NEXT_PUBLIC_SITE_URL=http://localhost:3000
 npm run dev
 ```
 Visit http://localhost:3000
+
+## Security regression tests
+
+With Node.js 22 or newer, run `npm test`. Tests exercise the actual upload and
+reminder handlers with mocked authentication, PDF, AI and database adapters.
+They do not send emails, spend AI credits, or access your database.
+
+Uploads now require a verified login token; both the notes and syllabus screens
+send it automatically. Scheduled reminders return 503 when `CRON_SECRET` is
+missing or blank, and 401 when the supplied Bearer token does not match. Configure
+the same secret in the deployment and scheduler before enabling reminders.
+
+## Database upgrade required for this version
+
+Read `docs/SECURITY_RELEASE.md` before deploying. This version requires the new
+`secure_ai_usage_and_atomic_save` migration after the existing SQL files 001–005.
+The server-only Supabase service-role key is now required for AI usage accounting.
+Do not publish the app alone: generation fails closed if the quota function or
+server key is unavailable, and saving requires the new transactional function.
 
 ## Working together (Git basics)
 - Pull latest before you start:  `git pull`

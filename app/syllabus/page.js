@@ -33,9 +33,16 @@ export default function SyllabusPage() {
     if (!file) return;
     setFileName(file.name); setError(''); setExtracting(true); setEvents(null);
     try {
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !session?.access_token) {
+        setError('Please log in again to upload a file.'); setFileName(''); return;
+      }
       const body = new FormData();
       body.append('file', file);
-      const res = await fetch('/api/extract-pdf', { method: 'POST', body });
+      const res = await fetch('/api/extract-pdf', {
+        method: 'POST', body,
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
       const data = await res.json();
       if (!res.ok) { setError(data.error || 'Could not read that file.'); return; }
       setText(data.text);

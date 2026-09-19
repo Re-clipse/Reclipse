@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "test": "node --experimental-vm-modules --test tests/*.test.mjs",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
@@ -18,6 +19,7 @@
     "stripe": "^22.6.2"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "0.5.8",
     "eslint": "^8.57.0",
     "eslint-config-next": "^14.2.5"
   }

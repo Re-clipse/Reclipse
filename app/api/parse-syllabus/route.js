@@ -1,24 +1,16 @@
 import Anthropic from '@anthropic-ai/sdk';
-import { supabaseFromRequest } from '@/lib/supabaseServer';
-
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+import { requireAIUser, readNotes, reserveAIUsage, aiErrorResponse } from '@/lib/aiRequest';
+import { parseModelJSON } from '@/lib/studyMaterial.mjs';
 const MAX_CHARS = 20000;
 const MAX_EVENTS = 40;
 
 export async function POST(request) {
-  const supabase = supabaseFromRequest(request);
-  const { data: { user }, error: userError } = await supabase.auth.getUser();
-  if (userError || !user) return Response.json({ error: 'Please log in first.' }, { status: 401 });
-
-  let { text } = await request.json();
-  if (!text || text.trim().length < 30) {
-    return Response.json({ error: 'That text looks too short to be a syllabus.' }, { status: 400 });
-  }
-  if (text.length > MAX_CHARS) text = text.slice(0, MAX_CHARS);
-
-  const today = new Date().toISOString().slice(0, 10);
-
   try {
+    const user = await requireAIUser(request);
+    const text = await readNotes(request, 30, MAX_CHARS);
+    const today = new Date().toISOString().slice(0, 10);
+    const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY, maxRetries: 0, timeout: 60000 });
+    await reserveAIUsage(user.id, 'syllabus');
     const response = await anthropic.messages.create({
       model: 'claude-sonnet-5',
       max_tokens: 3000,
@@ -37,12 +29,12 @@ Respond with ONLY valid JSON, no markdown fences, no commentary:
       messages: [{ role: 'user', content: text }],
     });
 
-    const raw = response.content[0].text.trim();
-    const cleaned = raw.replace(/^```json\s*/i, '').replace(/```$/, '');
-    const parsed = JSON.parse(cleaned);
-
-    const events = (parsed.events || [])
-      .filter((e) => e.title && /^\d{4}-\d{2}-\d{2}$/.test(e.date))
+    const parsed = parseModelJSON(response);
+    if (!Array.isArray(parsed?.events)) throw new Error('Invalid syllabus response');
+    const events = parsed.events
+      .filter((e) => typeof e?.title === 'string' && e.title.trim() &&
+        typeof e.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(e.date) &&
+        Number.isFinite(Date.parse(e.date)) && new Date(e.date).toISOString().slice(0, 10) === e.date)
       .slice(0, MAX_EVENTS)
       .map((e) => ({
         title: String(e.title).slice(0, 200),
@@ -52,10 +44,6 @@ Respond with ONLY valid JSON, no markdown fences, no commentary:
 
     return Response.json({ events });
   } catch (err) {
-    console.error('parse-syllabus error:', err);
-    if (String(err?.message || '').includes('credit balance')) {
-      return Response.json({ error: 'The AI service is out of credit.' }, { status: 502 });
-    }
-    return Response.json({ error: 'Could not read dates from that syllabus.' }, { status: 500 });
+    return aiErrorResponse(err);
   }
 }
