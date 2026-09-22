@@ -108,24 +108,24 @@ export default function SyllabusPage() {
   if (saved) {
     return (
       <main className="page page--narrow">
-        <div className="card center animate-in" style={{ padding: 'var(--s-7)' }}>
+        <div className="card center animate-in u-p-7">
           <div className="done__ring">
             <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"
                  strokeLinecap="round" strokeLinejoin="round"><path d="m5 13 4 4L19 7" /></svg>
           </div>
-          <h1 style={{ fontSize: 'var(--text-2xl)' }}>Dates saved</h1>
-          <p className="muted" style={{ marginTop: 'var(--s-3)' }}>
+          <h1 className="u-text-2xl">Dates saved</h1>
+          <p className="muted u-mt-3">
             {optIn
               ? "We'll email you a couple of days before each one to review your decks."
-              : 'Reminders are off for this course \u2014 you can turn them on anytime from the course settings.'}
+              : 'Reminders are off for this course. You can turn them on anytime from the course settings.'}
           </p>
           {optIn && (
             <div className="alert alert--note" style={{ marginTop: 'var(--s-4)', textAlign: 'left' }}>
-              First time getting mail from us? Check your spam/junk folder once \u2014
-              reminder emails occasionally land there.
+              First time getting mail from us? Check your spam/junk folder once.
+              Reminder emails occasionally land there.
             </div>
           )}
-          <div className="row actions-sm-stack" style={{ justifyContent: 'center', marginTop: 'var(--s-6)' }}>
+          <div className="row actions-sm-stack u-row-center u-mt-6">
             <a href="/decks" className="btn btn--primary">My decks</a>
             <button className="btn btn--ghost" onClick={() => { setSaved(false); setEvents(null); setText(''); setFileName(''); }}>
               Add another syllabus
@@ -141,7 +141,7 @@ export default function SyllabusPage() {
       <div className="page__head">
         <div>
           <h1>Syllabus &amp; reminders</h1>
-          <p>Upload a syllabus and we&apos;ll pull out the exam, quiz and lab dates \u2014 opt in and we&apos;ll email you before each one.</p>
+          <p>Upload a syllabus and we&apos;ll pull out the exam, quiz and lab dates. Opt in and we&apos;ll email you before each one.</p>
         </div>
       </div>
 
@@ -150,12 +150,12 @@ export default function SyllabusPage() {
           <label className="label">Course</label>
           {courses.length > 0 && (
             <select className="input" value={courseId} onChange={(e) => { setCourseId(e.target.value); setNewCourse(''); }}>
-              <option value="">\u2014 New course \u2014</option>
+              <option value="">New course</option>
               {courses.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
           )}
           {!courseId && (
-            <input className="input" style={{ marginTop: courses.length ? 8 : 0 }} placeholder="e.g. BI110 \u2014 Cell Biology"
+            <input className="input" style={{ marginTop: courses.length ? 8 : 0 }} placeholder="e.g. BI110 - Cell Biology"
                    value={newCourse} onChange={(e) => setNewCourse(e.target.value)} />
           )}
         </div>
@@ -194,14 +194,14 @@ export default function SyllabusPage() {
       </form>
 
       {events !== null && (
-        <div style={{ marginTop: 'var(--s-6)' }}>
-          <h3 style={{ marginBottom: 'var(--s-2)' }}>
+        <div className="u-mt-6">
+          <h3 className="u-mb-2">
             {events.length === 0 ? 'No dates found' : `Found ${events.length} date${events.length === 1 ? '' : 's'}`}
           </h3>
           {events.length > 0 && (
             <>
-              <p className="small muted" style={{ marginBottom: 'var(--s-4)' }}>Uncheck anything that&apos;s wrong \u2014 syllabus dates can be ambiguous.</p>
-              <div className="stack" style={{ marginBottom: 'var(--s-5)' }}>
+              <p className="small muted u-mb-4">Uncheck anything that&apos;s wrong. Syllabus dates can be ambiguous.</p>
+              <div className="stack u-mb-5">
                 {events.map((ev, i) => (
                   <label key={i} className="card row" style={{ cursor: 'pointer', opacity: ev.keep ? 1 : .5 }}>
                     <input type="checkbox" checked={ev.keep} onChange={() => toggleKeep(i)} />
@@ -212,9 +212,9 @@ export default function SyllabusPage() {
                 ))}
               </div>
 
-              <div className="card switch" style={{ marginBottom: 'var(--s-5)' }}>
+              <div className="card switch u-mb-5">
                 <div>
-                  <div style={{ fontWeight: 650 }}>Email me reminders (opt-in)</div>
+                  <div className="u-fw-650">Email me reminders (opt-in)</div>
                   <p className="small muted">
                     We&apos;ll email {user?.email} a couple of days before each date, suggesting you review your decks.
                     You can turn this off anytime.

@@ -36,11 +36,11 @@ export default function ResetPage() {
 
   return (
     <main className="page page--narrow">
-      <div className="card animate-in" style={{ padding: 'var(--s-6)' }}>
-        <div className="center" style={{ marginBottom: 'var(--s-5)' }}>
-          <h1 style={{ fontSize: 'var(--text-2xl)' }}>Set a new password</h1>
-          <p className="muted small" style={{ marginTop: 'var(--s-2)' }}>
-            Choose something you&apos;ll remember — you&apos;ll use it to log in from now on.
+      <div className="card animate-in u-p-6">
+        <div className="center u-mb-5">
+          <h1 className="u-text-2xl">Set a new password</h1>
+          <p className="muted small u-mt-2">
+            Choose something you&apos;ll remember. You&apos;ll use it to log in from now on.
           </p>
         </div>
 

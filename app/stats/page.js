@@ -13,6 +13,8 @@ import Mascot from '@/components/Mascot';
 import { LevelCard, GoalRing, Achievements } from '@/components/Rewards';
 import { computeXp, levelFromXp, cardsToday, evaluateAchievements } from '@/lib/rewards';
 
+const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
 export default function StatsPage() {
   const { user, loading: authLoading } = useAuth();
   const { cannon } = useCelebrate();
@@ -165,22 +167,42 @@ export default function StatsPage() {
         </div>
       )}
       <PageHeader accent="pink" icon={ICONS.stats} title="Progress"
-        subtitle={streak > 0 ? `${streak}-day streak — keep it alive` : 'Study today to start a streak'}
+        subtitle={streak > 0 ? `${streak}-day streak, keep it alive` : 'Study today to start a streak'}
         action={due > 0 ? <a href="/study?mode=due" className="btn btn--accent">Review {due} due</a> : null} />
 
       <div className="grid grid--2" style={{ marginBottom: 'var(--s-5)' }}>
         <LevelCard level={rewards.lvl.level} pct={rewards.lvl.pct} into={rewards.lvl.into}
                    span={rewards.lvl.span} xp={rewards.xp} />
-        <div className="card" style={{ display: 'flex', alignItems: 'center' }}>
-          <GoalRing done={rewards.goal.done} goal={rewards.goal.goal} pct={rewards.goal.pct} />
+        <div className="card goal-card">
+          <div>
+            <GoalRing done={rewards.goal.done} goal={rewards.goal.goal} pct={rewards.goal.pct} />
+            <p className="small muted goal-card__note">
+              {rewards.goal.pct >= 100
+                ? 'Goal reached. Nice work today.'
+                : `${Math.max(0, rewards.goal.goal - rewards.goal.done)} more to hit your goal.`}
+            </p>
+          </div>
+          <Mascot mood={rewards.goal.pct >= 100 ? 'celebrate' : 'happy'} size={88} float />
         </div>
       </div>
 
       <div className="stat-grid">
-        <div className="card stat"><div className="stat__n">{totals.reviewed}</div><div className="stat__l">Cards reviewed</div></div>
-        <div className="card stat"><div className="stat__n">{totals.accuracy}%</div><div className="stat__l">Quiz accuracy</div></div>
-        <div className="card stat"><div className="stat__n">{known}</div><div className="stat__l">Cards known</div></div>
-        <div className="card stat"><div className="stat__n">{totals.minutes}m</div><div className="stat__l">Time studied</div></div>
+        <div className="card stat stat--icon">
+          <span className="stat__ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m12 3 9 5-9 5-9-5 9-5Z"/><path d="m3 13 9 5 9-5"/></svg></span>
+          <div className="stat__n">{totals.reviewed}</div><div className="stat__l">Cards reviewed</div>
+        </div>
+        <div className="card stat stat--icon">
+          <span className="stat__ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg></span>
+          <div className="stat__n">{totals.accuracy}%</div><div className="stat__l">Quiz accuracy</div>
+        </div>
+        <div className="card stat stat--icon">
+          <span className="stat__ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m8.5 12.5 2.5 2.5 4.5-5"/></svg></span>
+          <div className="stat__n">{known}</div><div className="stat__l">Cards known</div>
+        </div>
+        <div className="card stat stat--icon">
+          <span className="stat__ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg></span>
+          <div className="stat__n">{totals.minutes}m</div><div className="stat__l">Time studied</div>
+        </div>
       </div>
 
       <div style={{ marginBottom: 'var(--s-5)' }}>
@@ -188,17 +210,27 @@ export default function StatsPage() {
       </div>
 
       <div className="card" style={{ marginBottom: 'var(--s-5)' }}>
-        <h3 style={{ fontSize: 'var(--text-lg)', marginBottom: 'var(--s-4)' }}>Last 4 weeks</h3>
-        <div className="activity">
+        <div className="row row--between" style={{ marginBottom: 'var(--s-4)' }}>
+          <h3 style={{ fontSize: 'var(--text-lg)' }}>Last 4 weeks</h3>
+          <span className="small muted">{totals.sessions} session{totals.sessions === 1 ? '' : 's'} total</span>
+        </div>
+        <div className="heat__days" aria-hidden="true">
+          {activity.slice(0, 7).map((a) => (
+            <span key={a.date}>{WEEKDAYS[new Date(`${a.date}T12:00:00Z`).getUTCDay()]}</span>
+          ))}
+        </div>
+        <div className="activity activity--grid">
           {activity.map((a) => {
             const level = a.count === 0 ? 0 : a.count >= max * 0.66 ? 3 : a.count >= max * 0.33 ? 2 : 1;
             return <div key={a.date} className="activity__day" data-level={level}
                         title={`${a.date}: ${a.count} session${a.count === 1 ? '' : 's'}`} />;
           })}
         </div>
-        <p className="small muted" style={{ marginTop: 'var(--s-3)' }}>
-          {totals.sessions} session{totals.sessions === 1 ? '' : 's'} total.
-        </p>
+        <div className="heat__legend" aria-hidden="true">
+          <span>Less</span>
+          {[0, 1, 2, 3].map((l) => <span key={l} className="activity__day" data-level={l} />)}
+          <span>More</span>
+        </div>
       </div>
 
       {weak.length > 0 && (
@@ -208,15 +240,16 @@ export default function StatsPage() {
             Quiz accuracy by deck, lowest first. Only decks you&apos;ve answered 3+ questions in.
           </p>
           {weak.map((w) => (
-            <div key={w.id} className="bar-row">
+            <div key={w.id} className="bar-row weak-row">
               <a className="bar-row__label" href={`/study?deck=${w.id}`}>{w.title}</a>
-              <div className="bar-row__track">
-                <div className="bar-row__fill" style={{
-                  width: `${w.accuracy}%`,
+              <div className="bar-row__track weak-row__track">
+                <div className="bar-row__fill weak-row__fill" style={{
+                  width: `${Math.max(w.accuracy, 12)}%`,
                   background: w.accuracy < 50 ? 'var(--error)' : w.accuracy < 75 ? 'var(--yellow-400)' : 'var(--violet-600)',
-                }} />
+                  color: w.accuracy < 50 ? '#fff' : w.accuracy < 75 ? 'var(--ink)' : '#fff',
+                }}>{w.accuracy}%</div>
               </div>
-              <span className="bar-row__val">{w.accuracy}%</span>
+              <a className="btn btn--ghost weak-row__btn" href={`/study?deck=${w.id}`}>Study</a>
             </div>
           ))}
         </div>

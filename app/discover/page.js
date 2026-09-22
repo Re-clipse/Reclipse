@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import PageHeader, { ICONS } from '@/components/PageHeader';
 import { supabase } from '@/lib/supabaseClient';
 import Mascot from '@/components/Mascot';
+import LoadError from '@/components/LoadError';
+import { withTimeout } from '@/lib/net';
 
 export default function DiscoverPage() {
   const [decks, setDecks] = useState(null);
@@ -12,12 +14,17 @@ export default function DiscoverPage() {
 
   async function load(course) {
     setError('');
-    const { data, error } = await supabase.rpc('popular_decks', {
-      p_course: course?.trim() || null,
-      p_limit: 30,
-    });
-    if (error) { setError("Couldn't load popular decks right now."); setDecks([]); return; }
-    setDecks(data || []);
+    try {
+      const { data, error } = await withTimeout(supabase.rpc('popular_decks', {
+        p_course: course?.trim() || null,
+        p_limit: 30,
+      }), 12000, 'discover');
+      if (error) { setError("Couldn't load popular decks right now."); setDecks([]); return; }
+      setDecks(data || []);
+    } catch {
+      setError("Couldn't load popular decks. This is usually a connection hiccup.");
+      setDecks([]);
+    }
   }
 
   useEffect(() => { load(''); }, []);
@@ -27,7 +34,7 @@ export default function DiscoverPage() {
       <div className="page__head">
         <div>
           <h1>Campus popular</h1>
-          <p>The most-studied shared decks across every Reclipse user \u2014 anonymous, no login needed to browse.</p>
+          <p>The most-studied shared decks across every Reclipse user. Anonymous, no login needed to browse.</p>
         </div>
       </div>
 
@@ -42,18 +49,20 @@ export default function DiscoverPage() {
         <button className="btn btn--ghost">Search</button>
       </form>
 
-      {error && <div className="alert alert--error">{error}</div>}
+      {error && decks && decks.length > 0 && <div className="alert alert--error">{error}</div>}
 
       {decks === null ? (
         <div className="stack">{[0, 1, 2].map((i) => <div key={i} className="skeleton" style={{ height: 76 }} />)}</div>
+      ) : error && decks.length === 0 ? (
+        <LoadError message={error} onRetry={() => { setDecks(null); load(q); }} />
       ) : decks.length === 0 ? (
         <div className="empty">
-          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 'var(--s-3)' }}>
+          <div className="mascot-wrap">
             <Mascot mood="thinking" size={92} />
           </div>
           <h3>Nothing shared yet</h3>
           <p>
-            Nobody&apos;s turned on sharing for a deck in this course yet. Be the first \u2014
+            Nobody&apos;s turned on sharing for a deck in this course yet. Be the first:
             open one of your decks and turn on sharing in Settings.
           </p>
           <a href="/decks" className="btn btn--primary">My decks</a>

@@ -7,16 +7,20 @@ import { streakFrom } from '@/lib/stats';
 import { cardsToday } from '@/lib/rewards';
 import { GoalRing } from '@/components/Rewards';
 import Mascot from '@/components/Mascot';
-import PageHeader, { ICONS } from '@/components/PageHeader';
+import PageHeader, { ICONS, ACCENTS } from '@/components/PageHeader';
 import Modal from '@/components/Modal';
 import LoadError from '@/components/LoadError';
 import { withTimeout } from '@/lib/net';
+
+// Course spine colors cycle through the shared per-page accent palette.
+const ACCENT_CYCLE = ['green', 'blue', 'amber', 'pink', 'teal', 'orange', 'indigo'];
 
 export default function DecksPage() {
   const { user, loading: authLoading } = useAuth();
   const [decks, setDecks] = useState(null);
   const [courses, setCourses] = useState([]);
   const [due, setDue] = useState(0);
+  const [progress, setProgress] = useState({});
   const [streak, setStreak] = useState(0);
   const [goal, setGoal] = useState({ done: 0, goal: 20, pct: 0 });
   const [q, setQ] = useState('');
@@ -29,7 +33,7 @@ export default function DecksPage() {
     if (!user) return;
     setError('');
     try {
-      const [decksRes, coursesRes, dueRes, sessRes] = await withTimeout(Promise.all([
+      const [decksRes, coursesRes, dueRes, sessRes, progRes] = await withTimeout(Promise.all([
         supabase.from('decks')
           .select('id, title, created_at, course_id, is_public, flashcards(count), quiz_questions(count)')
           .order('created_at', { ascending: false }),
@@ -37,18 +41,29 @@ export default function DecksPage() {
         supabase.from('card_progress').select('flashcard_id', { count: 'exact', head: true })
           .lte('due_at', new Date().toISOString()),
         supabase.from('study_sessions').select('created_at').order('created_at', { ascending: false }).limit(400),
+        supabase.from('card_progress').select('due_at, flashcards(deck_id)').limit(5000),
       ]), 12000, 'decks');
 
       if (decksRes.error) { setError("We couldn't load your decks."); setDecks([]); return; }
       setDecks(decksRes.data || []);
       setCourses(coursesRes.data || []);
       setDue(dueRes.count || 0);
+      // Per-deck due / learned counts. Best-effort: a failure here only hides the mastery bars.
+      const now = Date.now();
+      const perDeck = {};
+      for (const r of progRes.data || []) {
+        const id = r.flashcards?.deck_id;
+        if (!id) continue;
+        const p = (perDeck[id] ||= { due: 0, learned: 0 });
+        if (new Date(r.due_at).getTime() <= now) p.due += 1; else p.learned += 1;
+      }
+      setProgress(perDeck);
       const sess = sessRes.data || [];
       setStreak(streakFrom(sess.map((s) => s.created_at)));
       setGoal(cardsToday(sess, 20));
     } catch {
       // Timed out or network failure — show the retry UI rather than a stuck skeleton.
-      setError("We couldn't load your decks — this is usually a connection hiccup.");
+      setError("We couldn't load your decks. This is usually a connection hiccup.");
       setDecks([]);
     }
   }, [user]);
@@ -83,52 +98,47 @@ export default function DecksPage() {
     });
   }, [decks, q, courseFilter]);
 
-  if (authLoading) return <main className="page"><div className="skeleton" style={{ height: 300 }} /></main>;
+  if (authLoading) return <main className="page page--wide"><div className="skeleton" style={{ height: 300 }} /></main>;
 
   return (
-    <main className="page">
+    <main className="page page--wide">
       <PageHeader
         accent="violet" icon={ICONS.decks} title="My decks"
         subtitle="Turn your notes into cards, then let spaced repetition do the rest."
-        action={<>
-          {due > 0 && <a href="/study?mode=due" className="btn btn--accent">Review {due} due</a>}
-          <a href="/upload" className="btn btn--page">+ New set</a>
-        </>}
+        action={<a href="/upload" className="btn btn--page">+ New set</a>}
       />
 
-      {decks && decks.length > 0 && goal.done > 0 && !goal.met && (
-        <div className="card" style={{ marginBottom: 'var(--s-4)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--s-4)' }}>
-          <GoalRing done={goal.done} goal={goal.goal} pct={goal.pct} />
-          <a href="/study?mode=due" className="btn btn--accent">Keep going</a>
-        </div>
-      )}
-      {decks && decks.length > 0 && goal.met && (
-        <div className="card" style={{ marginBottom: 'var(--s-4)', display: 'flex', alignItems: 'center', gap: 'var(--s-4)' }}>
-          <GoalRing done={goal.done} goal={goal.goal} pct={goal.pct} />
-          <div><strong>Daily goal hit</strong><p className="small muted">Nice work today — anything extra is a bonus.</p></div>
-        </div>
-      )}
-
       {decks && decks.length > 0 && (
-        <div className="chips">
-          <div className={`chip-stat${streak > 0 ? ' chip-stat--hot' : ''}`}>
-            <div className="chip-stat__ico" style={{ background: '#FEF3C7', color: '#CA8A04' }}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5Z"/></svg>
+        <div className="card hero-strip">
+          <div className="hero-strip__stats">
+            <div className="hero-strip__goal">
+              <GoalRing done={goal.done} goal={goal.goal} pct={goal.pct} />
             </div>
-            <div><div className="chip-stat__n">{streak}</div><div className="chip-stat__l">day streak</div></div>
-          </div>
-          <div className="chip-stat">
-            <div className="chip-stat__ico" style={{ background: '#EDE9FE', color: '#6D28D9' }}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/></svg>
+            <div className="hero-strip__divider" aria-hidden="true" />
+            <div className="chips">
+              <div className={`chip-stat${streak > 0 ? ' chip-stat--hot' : ''}`}>
+                <div className="chip-stat__ico" style={{ background: '#FEF3C7', color: '#CA8A04' }}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5Z"/></svg>
+                </div>
+                <div><div className="chip-stat__n">{streak}</div><div className="chip-stat__l">day streak</div></div>
+              </div>
+              <div className="chip-stat">
+                <div className="chip-stat__ico" style={{ background: '#EDE9FE', color: '#6D28D9' }}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/></svg>
+                </div>
+                <div><div className="chip-stat__n">{decks.length}</div><div className="chip-stat__l">decks</div></div>
+              </div>
+              <div className="chip-stat">
+                <div className="chip-stat__ico" style={{ background: '#DCFCE7', color: '#059669' }}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+                </div>
+                <div><div className="chip-stat__n">{due}</div><div className="chip-stat__l">cards due</div></div>
+              </div>
             </div>
-            <div><div className="chip-stat__n">{decks.length}</div><div className="chip-stat__l">decks</div></div>
           </div>
-          <div className="chip-stat">
-            <div className="chip-stat__ico" style={{ background: '#DCFCE7', color: '#059669' }}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
-            </div>
-            <div><div className="chip-stat__n">{due}</div><div className="chip-stat__l">cards due</div></div>
-          </div>
+          {due > 0
+            ? <a href="/study?mode=due" className="btn btn--accent hero-strip__cta">Review {due} due</a>
+            : goal.met && <p className="small muted hero-strip__note">Daily goal hit. Nice work today.</p>}
         </div>
       )}
 
@@ -159,8 +169,8 @@ export default function DecksPage() {
       {error && decks && decks.length === 0 ? (
         <LoadError message={error} onRetry={() => { setDecks(null); load(); }} />
       ) : visible === null ? (
-        <div className="stack">
-          {[0, 1, 2].map((i) => <div key={i} className="skeleton" style={{ height: 88 }} />)}
+        <div className="deck-grid">
+          {[0, 1, 2, 3].map((i) => <div key={i} className="skeleton" style={{ height: 196 }} />)}
         </div>
       ) : visible.length === 0 ? (
         decks.length === 0 ? (
@@ -169,37 +179,58 @@ export default function DecksPage() {
               <Mascot mood="happy" size={96} float />
             </div>
             <h3>No study sets yet</h3>
-            <p>Upload a PDF, a photo of your notes, or paste text — we&apos;ll build the cards.</p>
+            <p>Upload a PDF, a photo of your notes, or paste text. We&apos;ll build the cards.</p>
             <a href="/upload" className="btn btn--primary btn--lg">Create your first set</a>
           </div>
         ) : (
           <div className="empty"><h3>No decks match</h3><p>Try a different search or filter.</p></div>
         )
       ) : (
-        <div className="stack">
+        <div className="deck-grid">
           {visible.map((d, i) => {
             const cards = d.flashcards?.[0]?.count ?? 0;
             const quiz = d.quiz_questions?.[0]?.count ?? 0;
-            const course = courses.find((c) => c.id === d.course_id);
+            const courseIdx = courses.findIndex((c) => c.id === d.course_id);
+            const course = courseIdx >= 0 ? courses[courseIdx] : null;
+            const accent = course ? ACCENTS[ACCENT_CYCLE[courseIdx % ACCENT_CYCLE.length]] : ACCENTS.violet;
+            const prog = progress[d.id] || { due: 0, learned: 0 };
+            const learned = Math.min(prog.learned, cards);
+            const pct = cards ? Math.round((learned / cards) * 100) : 0;
+            const caughtUp = cards > 0 && prog.due === 0 && learned >= cards;
+            const status = cards === 0 ? 'No cards yet'
+              : prog.due > 0 ? `${prog.due} due today`
+              : caughtUp ? 'All caught up'
+              : `${cards - learned} new`;
             return (
-              <div key={d.id} className="card deck rise" style={{ animationDelay: `${Math.min(i, 8) * 40}ms` }}>
-                <div style={{ minWidth: 0 }}>
-                  <div className="deck__title">
-                    <a href={`/deck/${d.id}`} style={{ color: 'inherit' }}>{d.title}</a>
-                  </div>
-                  <div className="deck__meta">
-                    {course && <span className="badge">{course.name}</span>}
-                    <span>{cards} card{cards === 1 ? '' : 's'}</span>
-                    <span>·</span>
-                    <span>{quiz} quiz</span>
-                    {d.is_public && <span className="badge badge--accent">Shared</span>}
-                  </div>
+              <div key={d.id} className="card deck-tile rise"
+                   style={{ '--spine': accent.solid, animationDelay: `${Math.min(i, 8) * 40}ms` }}>
+                <div className="deck-tile__menu">
+                  <a href={`/deck/${d.id}`} className="deck-tile__icon" aria-label={`Open ${d.title}`} title="Open">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
+                  </a>
+                  <button onClick={() => remove(d.id, d.title)} className="deck-tile__icon deck-tile__icon--danger"
+                          aria-label={`Delete ${d.title}`} title="Delete">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                  </button>
                 </div>
-                <div className="deck__actions">
-                  <a href={`/study?deck=${d.id}`} className="btn btn--primary">Study</a>
-                  <a href={`/deck/${d.id}`} className="btn btn--ghost">Open</a>
-                  <button onClick={() => remove(d.id, d.title)} className="btn btn--quiet">Delete</button>
+                {course && <div><span className="badge">{course.name}</span></div>}
+                <div className="deck-tile__title">
+                  <a href={`/deck/${d.id}`}>{d.title}</a>
                 </div>
+                <div className={`deck-tile__status${prog.due > 0 ? ' deck-tile__status--due' : ''}`}>{status}</div>
+                <div className="progress-mini" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}
+                     aria-label="Cards learned">
+                  <div className={`progress-mini__bar${caughtUp ? ' progress-mini__bar--done' : ''}`} style={{ width: `${pct}%` }} />
+                </div>
+                <div className="deck__meta deck-tile__meta">
+                  <span>{cards} card{cards === 1 ? '' : 's'}</span>
+                  <span>·</span>
+                  <span>{quiz} quiz</span>
+                  {d.is_public && <span className="badge badge--accent" style={{ marginLeft: 'auto' }}>Shared</span>}
+                </div>
+                <a href={`/study?deck=${d.id}`} className={`btn btn--block ${caughtUp ? 'btn--ghost' : 'btn--primary'}`}>
+                  {caughtUp ? 'Practice' : 'Study'}
+                </a>
               </div>
             );
           })}
@@ -209,7 +240,7 @@ export default function DecksPage() {
       {showCourse && (
         <Modal title="New course" onClose={() => setShowCourse(false)}>
           <form onSubmit={addCourse} className="stack">
-            <input className="input" autoFocus placeholder="e.g. BI110 — Cell Biology"
+            <input className="input" autoFocus placeholder="e.g. BI110 - Cell Biology"
                    value={newCourse} onChange={(e) => setNewCourse(e.target.value)} />
             <div className="row">
               <button className="btn btn--primary">Add course</button>

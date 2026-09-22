@@ -21,7 +21,7 @@ export default function WelcomePage() {
     e.preventDefault();
     setError('');
     const name = course.trim();
-    if (!name) { setError('Name a course to continue \u2014 you can rename it later.'); return; }
+    if (!name) { setError('Name a course to continue. You can rename it later.'); return; }
 
     setSaving(true);
     const { data, error } = await supabase.from('courses').insert({ user_id: user.id, name }).select().single();
@@ -33,20 +33,20 @@ export default function WelcomePage() {
 
   return (
     <main className="page page--narrow">
-      <div className="progress" style={{ marginBottom: 'var(--s-6)' }}><div className="progress__bar" style={{ width: '33%' }} /></div>
-      <div className="card animate-in" style={{ padding: 'var(--s-6)' }}>
-        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 'var(--s-3)' }}>
+      <div className="progress u-mb-6"><div className="progress__bar" style={{ width: '33%' }} /></div>
+      <div className="card animate-in u-p-6">
+        <div className="mascot-wrap">
           <Mascot mood="excited" size={108} float />
         </div>
         <span className="badge">Step 1 of 3</span>
         <h1 style={{ fontSize: 'var(--text-2xl)', marginTop: 'var(--s-3)', marginBottom: 'var(--s-2)' }}>Name your first course</h1>
-        <p className="muted small" style={{ marginBottom: 'var(--s-5)' }}>
-          Next, you&apos;ll upload a set of notes and try the tutorial quiz \u2014 about a minute, start to finish.
+        <p className="muted small u-mb-5">
+          Next, you&apos;ll upload a set of notes and try the tutorial quiz. About a minute, start to finish.
         </p>
         <form onSubmit={next} className="stack">
           <div className="field">
             <label className="label" htmlFor="course">Course name</label>
-            <input id="course" className="input" autoFocus placeholder="e.g. BI110 \u2014 Cell Biology"
+            <input id="course" className="input" autoFocus placeholder="e.g. BI110 - Cell Biology"
                    value={course} onChange={(e) => setCourse(e.target.value)} />
           </div>
           {error && <div className="alert alert--error">{error}</div>}

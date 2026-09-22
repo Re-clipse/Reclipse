@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import PageHeader, { ICONS } from '@/components/PageHeader';
 import { supabase } from '@/lib/supabaseClient';
+import LoadError from '@/components/LoadError';
 import { useAuth } from '@/lib/useAuth';
 import Mascot from '@/components/Mascot';
 import { useCelebrate } from '@/components/Celebrate';
@@ -35,15 +36,22 @@ export default function ExamPage() {
   const [i, setI] = useState(0);
   const [left, setLeft] = useState(0);
   const [loadErr, setLoadErr] = useState('');
+  const [decksFailed, setDecksFailed] = useState(false);
+  const [decksReload, setDecksReload] = useState(0);
   const startedAt = useRef(0);
 
   useEffect(() => {
     if (!user) return;
+    setDecksFailed(false);
     supabase.from('decks')
       .select('id, title, quiz_questions(count)')
       .order('created_at', { ascending: false })
-      .then(({ data }) => setDecks((data || []).filter((d) => (d.quiz_questions?.[0]?.count ?? 0) > 0)));
-  }, [user]);
+      .then(({ data, error }) => {
+        if (error) { setDecksFailed(true); return; }
+        setDecks((data || []).filter((d) => (d.quiz_questions?.[0]?.count ?? 0) > 0));
+      })
+      .catch(() => setDecksFailed(true));
+  }, [user, decksReload]);
 
   const finish = useCallback(() => {
     setPhase('results');
@@ -104,10 +112,12 @@ export default function ExamPage() {
         <PageHeader accent="orange" icon={ICONS.exam} title="Mock exam"
           subtitle="Timed, shuffled questions pulled from whichever decks you pick." />
 
-        {decks.length === 0 ? (
+        {decksFailed ? (
+          <LoadError message="We couldn't load your decks." onRetry={() => setDecksReload((n) => n + 1)} />
+        ) : decks.length === 0 ? (
           <div className="empty">
             <h3>No quiz questions yet</h3>
-            <p>Generate a study set first — every set comes with quiz questions.</p>
+            <p>Generate a study set first. Every set comes with quiz questions.</p>
             <a href="/upload" className="btn btn--primary">Create a study set</a>
           </div>
         ) : (
@@ -136,7 +146,7 @@ export default function ExamPage() {
                           onClick={() => setLength(n)}>{n}</button>
                 ))}
               </div>
-              <label className="label" style={{ marginTop: 'var(--s-3)' }}>Time limit</label>
+              <label className="label u-mt-3">Time limit</label>
               <div className="pills">
                 {MINUTES.map((n) => (
                   <button key={n} className={`pill${minutes === n ? ' pill--on' : ''}`}
@@ -159,25 +169,25 @@ export default function ExamPage() {
     const missed = questions.filter((q) => answers[q.id] !== q.correct_index);
     return (
       <main className="page page--narrow">
-        <div className="card center animate-in" style={{ padding: 'var(--s-7)' }}>
-          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 'var(--s-3)' }}>
+        <div className="card center animate-in u-p-7">
+          <div className="mascot-wrap">
             <Mascot mood={pct >= 70 ? 'excited' : 'determined'} size={110} bounce />
           </div>
           <p className="muted small">Exam score</p>
           <div className="score">{pct}%</div>
-          <p className="muted" style={{ marginTop: 'var(--s-2)' }}>
+          <p className="muted u-mt-2">
             {score} of {questions.length} correct
             {left === 0 ? ' · time ran out' : ''}
           </p>
-          <div className="row actions-sm-stack" style={{ justifyContent: 'center', marginTop: 'var(--s-6)' }}>
+          <div className="row actions-sm-stack u-row-center u-mt-6">
             <button className="btn btn--primary" onClick={() => setPhase('setup')}>New exam</button>
             <a href="/stats" className="btn btn--ghost">See progress</a>
           </div>
         </div>
 
         {missed.length > 0 && (
-          <div style={{ marginTop: 'var(--s-6)' }}>
-            <h3 style={{ marginBottom: 'var(--s-4)' }}>Review these ({missed.length})</h3>
+          <div className="u-mt-6">
+            <h3 className="u-mb-4">Review these ({missed.length})</h3>
             <div className="stack">
               {missed.map((q) => (
                 <div key={q.id} className="card">
@@ -186,7 +196,7 @@ export default function ExamPage() {
                     {answers[q.id] === undefined ? 'Not answered' : `You chose: ${q.options[answers[q.id]]}`}
                   </p>
                   <p className="small" style={{ color: 'var(--success)' }}>Correct: {q.options[q.correct_index]}</p>
-                  {q.explanation && <p className="small muted" style={{ marginTop: 'var(--s-2)' }}>{q.explanation}</p>}
+                  {q.explanation && <p className="small muted u-mt-2">{q.explanation}</p>}
                 </div>
               ))}
             </div>
@@ -207,7 +217,7 @@ export default function ExamPage() {
       <div className="study__bar">
         <span className={`timer${left < 60 ? ' timer--low' : ''}`}>{mm}:{ss}</span>
         <div className="progress"><div className="progress__bar" style={{ width: `${(i / questions.length) * 100}%` }} /></div>
-        <span className="small muted" style={{ flex: 'none' }}>{i + 1}/{questions.length}</span>
+        <span className="small muted u-flex-none">{i + 1}/{questions.length}</span>
       </div>
 
       <div className="card animate-in" key={i}>
@@ -221,14 +231,14 @@ export default function ExamPage() {
             </button>
           ))}
         </div>
-        <div className="row" style={{ marginTop: 'var(--s-5)' }}>
+        <div className="row u-mt-5">
           <button className="btn btn--ghost" disabled={i === 0} onClick={() => setI((n) => n - 1)}>Back</button>
           {i + 1 < questions.length
             ? <button className="btn btn--primary" style={{ flex: 1 }} onClick={() => setI((n) => n + 1)}>Next</button>
             : <button className="btn btn--got" style={{ flex: 1 }} onClick={finish}>Submit exam</button>}
         </div>
-        <p className="small muted center" style={{ marginTop: 'var(--s-3)' }}>
-          {Object.keys(answers).length} of {questions.length} answered — you can go back and change answers.
+        <p className="small muted center u-mt-3">
+          {Object.keys(answers).length} of {questions.length} answered. You can go back and change answers.
         </p>
       </div>
     </main>

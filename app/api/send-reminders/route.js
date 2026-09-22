@@ -60,14 +60,14 @@ async function sendReminderEmail(to, ev, when) {
         to,
         subject: `${ev.courses?.name || 'A course'}: ${ev.title} is ${when}`,
         html: `
-          <p>Hey \u2014 just a heads up:</p>
+          <p>Hey, just a heads up:</p>
           <p><strong>${ev.title}</strong> (${ev.event_type}) for <strong>${ev.courses?.name || 'your course'}</strong>
           is ${when} (${ev.event_date}).</p>
           <p>Might be a good time to review your decks for it.</p>
           <p><a href="https://reclipsed.netlify.app/decks">Open Reclipse</a></p>
           <p style="color:#888;font-size:13px;margin-top:24px;">
-            Don't see this in your main inbox? Check your spam/junk folder \u2014
-            reminder emails sometimes land there.
+            Don't see this in your main inbox? Check your spam/junk folder.
+            Reminder emails sometimes land there.
           </p>
         `,
       }),

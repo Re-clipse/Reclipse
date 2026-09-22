@@ -16,8 +16,8 @@ const NAV = [
 ];
 
 const SHORTCUTS = [
-  ['Studying', [['Space', 'Flip card'], ['1 – 4', 'Grade (Again / Hard / Good / Easy)']]],
-  ['Quiz', [['A – D', 'Pick an answer'], ['Enter', 'Next question']]],
+  ['Studying', [['Space', 'Flip card'], ['1 to 4', 'Grade (Again / Hard / Good / Easy)']]],
+  ['Quiz', [['A to D', 'Pick an answer'], ['Enter', 'Next question']]],
   ['Anywhere', [['⌘ / Ctrl + K', 'Quick navigation'], ['?', 'Show this help']]],
 ];
 

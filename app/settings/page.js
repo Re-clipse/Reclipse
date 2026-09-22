@@ -5,6 +5,8 @@ import PageHeader, { ICONS } from '@/components/PageHeader';
 import { supabase } from '@/lib/supabaseClient';
 import { useAuth } from '@/lib/useAuth';
 import { useToast } from '@/components/Toast';
+import LoadError from '@/components/LoadError';
+import { withTimeout } from '@/lib/net';
 
 export default function SettingsPage() {
   const { user, loading: authLoading } = useAuth();
@@ -14,19 +16,26 @@ export default function SettingsPage() {
   const [courses, setCourses] = useState([]);
   const [saving, setSaving] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  const [failed, setFailed] = useState(false);
+  const [reload, setReload] = useState(0);
 
   useEffect(() => {
     if (!user) return;
+    setFailed(false);
     (async () => {
-      const [{ data: profile }, { data: cs }] = await Promise.all([
-        supabase.from('profiles').select('display_name').eq('user_id', user.id).maybeSingle(),
-        supabase.from('courses').select('*').order('name'),
-      ]);
-      setName(profile?.display_name || '');
-      setCourses(cs || []);
-      setLoaded(true);
+      try {
+        const [{ data: profile }, { data: cs }] = await withTimeout(Promise.all([
+          supabase.from('profiles').select('display_name').eq('user_id', user.id).maybeSingle(),
+          supabase.from('courses').select('*').order('name'),
+        ]), 12000, 'settings');
+        setName(profile?.display_name || '');
+        setCourses(cs || []);
+        setLoaded(true);
+      } catch {
+        setFailed(true);
+      }
     })();
-  }, [user]);
+  }, [user, reload]);
 
   async function saveName() {
     setSaving(true);
@@ -42,13 +51,14 @@ export default function SettingsPage() {
     toast(!current ? 'Reminders on for this course' : 'Reminders off');
   }
 
+  if (failed) return <main className="page"><LoadError onRetry={() => setReload((n) => n + 1)} /></main>;
   if (authLoading || !loaded) return <main className="page"><div className="skeleton" style={{ height: 360 }} /></main>;
 
   return (
     <main className="page page--narrow">
       <PageHeader accent="indigo" icon={ICONS.settings} title="Settings" subtitle={user?.email} />
 
-      <div className="card stack" style={{ marginBottom: 'var(--s-5)' }}>
+      <div className="card stack u-mb-5">
         <div className="field">
           <label className="label" htmlFor="dn">Display name</label>
           <input id="dn" className="input" value={name} placeholder="Your name"
@@ -61,7 +71,7 @@ export default function SettingsPage() {
 
       <div className="card">
         <div style={{ fontWeight: 650, marginBottom: 'var(--s-1)' }}>Exam reminders by course</div>
-        <p className="small muted" style={{ marginBottom: 'var(--s-4)' }}>
+        <p className="small muted u-mb-4">
           When on, we email you a couple of days before each saved exam, quiz or lab date.
           Add dates from the <a href="/syllabus">syllabus page</a>.
         </p>
@@ -82,9 +92,9 @@ export default function SettingsPage() {
         )}
       </div>
 
-      <div className="card switch" style={{ marginTop: 'var(--s-5)' }}>
+      <div className="card switch u-mt-5">
         <div>
-          <div style={{ fontWeight: 650 }}>Sign out</div>
+          <div className="u-fw-650">Sign out</div>
           <p className="small muted">Sign out of Reclipse on this device.</p>
         </div>
         <button className="btn btn--ghost" onClick={async () => { await supabase.auth.signOut(); window.location.href = '/'; }}>

@@ -4,18 +4,18 @@ import { useCallback, useEffect, useState } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
 import { supabase } from '@/lib/supabaseClient';
-
-const money = (c) => `$${(c / 100).toFixed(2)}`;
+import { hasArchiveAccess, startArchiveCheckout } from '@/lib/archive';
 
 function ArchiveDeckInner() {
   const { id } = useParams();
   const router = useRouter();
-  const justPurchased = useSearchParams().get('purchased') === '1';
+  const justSubscribed = useSearchParams().get('subscribed') === '1';
 
   const [preview, setPreview] = useState(null);
-  const [owned, setOwned] = useState(false);
+  const [access, setAccess] = useState(false);
+  const [mine, setMine] = useState(false);
   const [status, setStatus] = useState('loading');
-  const [buying, setBuying] = useState(false);
+  const [subscribing, setSubscribing] = useState(false);
   const [error, setError] = useState('');
 
   const load = useCallback(async () => {
@@ -25,15 +25,19 @@ function ArchiveDeckInner() {
     setPreview({
       title: data[0].title,
       course_label: data[0].course_label,
-      price_cents: data[0].price_cents,
       samples: data.filter((r) => r.sample_question),
     });
 
     const { data: { session } } = await supabase.auth.getSession();
     if (session) {
-      const { data: purchase } = await supabase.from('deck_purchases')
-        .select('id').eq('deck_id', id).eq('buyer_user_id', session.user.id).maybeSingle();
-      setOwned(!!purchase);
+      // Your own deck, a legacy purchase, or an active subscription all grant access.
+      const [{ data: own }, { data: purchase }, sub] = await Promise.all([
+        supabase.from('decks').select('id').eq('id', id).eq('user_id', session.user.id).maybeSingle(),
+        supabase.from('deck_purchases').select('id').eq('deck_id', id).eq('buyer_user_id', session.user.id).maybeSingle(),
+        hasArchiveAccess(),
+      ]);
+      setMine(!!own);
+      setAccess(!!own || !!purchase || sub);
     }
     setStatus('ready');
   }, [id]);
@@ -41,36 +45,26 @@ function ArchiveDeckInner() {
   useEffect(() => { load(); }, [load]);
 
   // Stripe's webhook may land a moment after the success redirect, so re-check
-  // briefly rather than telling a paying user they don't own the deck.
+  // briefly rather than telling a paying user they don't have access yet.
   useEffect(() => {
-    if (!justPurchased || owned) return;
+    if (!justSubscribed || access) return;
     const t = setInterval(load, 1500);
     const stop = setTimeout(() => clearInterval(t), 15000);
     return () => { clearInterval(t); clearTimeout(stop); };
-  }, [justPurchased, owned, load]);
+  }, [justSubscribed, access, load]);
 
-  async function buy() {
+  async function subscribe() {
     setError('');
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) { router.push(`/login?next=${encodeURIComponent(`/archive/${id}`)}`); return; }
-
-    setBuying(true);
+    setSubscribing(true);
     try {
-      const res = await fetch('/api/archive/checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
-        body: JSON.stringify({ deckId: id }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        if (data.alreadyOwned) { setOwned(true); return; }
-        setError(data.error || 'Could not start checkout.');
-        return;
-      }
-      window.location.href = data.url;
+      const r = await startArchiveCheckout(id);
+      if (r.needsLogin) { router.push(`/login?next=${encodeURIComponent(`/archive/${id}`)}`); return; }
+      if (r.alreadySubscribed) { setAccess(true); return; }
+      if (!r.ok) { setError(r.error || 'Could not start checkout.'); return; }
+      window.location.href = r.url;
     } catch {
       setError('Could not reach the server.');
-    } finally { setBuying(false); }
+    } finally { setSubscribing(false); }
   }
 
   if (status === 'loading') return <main className="page"><div className="skeleton" style={{ height: 340 }} /></main>;
@@ -84,52 +78,55 @@ function ArchiveDeckInner() {
 
   return (
     <main className="page page--narrow">
-      <div className="card animate-in" style={{ padding: 'var(--s-6)' }}>
+      <div className="card animate-in u-p-6">
         <span className="badge badge--accent">Campus Archive</span>
         <h1 style={{ marginTop: 'var(--s-3)', fontSize: 'var(--text-2xl)' }}>{preview.title}</h1>
-        {preview.course_label && <p className="muted small" style={{ marginTop: 'var(--s-2)' }}>{preview.course_label}</p>}
+        {preview.course_label && <p className="muted small u-mt-2">{preview.course_label}</p>}
 
-        {owned ? (
+        {access ? (
           <>
-            <div className="alert alert--note" style={{ marginTop: 'var(--s-5)' }}>
-              You own this deck — it&apos;s saved to your account.
+            <div className="alert alert--note u-mt-5">
+              {mine ? 'This is your deck. It\u2019s listed in the Campus Archive.' : 'Included with your Campus Archive membership.'}
             </div>
-            <a href={`/study?deck=${id}`} className="btn btn--primary btn--block btn--lg" style={{ marginTop: 'var(--s-4)' }}>
+            <a href={`/study?deck=${id}`} className="btn btn--primary btn--block btn--lg u-mt-4">
               Start studying
             </a>
           </>
         ) : (
           <>
-            {justPurchased && (
-              <div className="alert alert--note" style={{ marginTop: 'var(--s-5)' }}>
+            {justSubscribed && (
+              <div className="alert alert--note u-mt-5">
                 <span className="spinner spinner--ink" style={{ marginRight: 8 }} />
-                Confirming your payment — this usually takes a few seconds.
+                Confirming your subscription. This usually takes a few seconds.
               </div>
             )}
-            <p className="muted" style={{ marginTop: 'var(--s-4)' }}>
-              Unlock the full deck — every flashcard and the practice quiz — permanently, for a one-time
-              payment. Made by a student who already took this course.
+            <p className="muted u-mt-4">
+              Campus Archive members can study every archived deck: all the flashcards and practice
+              quizzes, made by students who already took the course.
             </p>
-            {error && <div className="alert alert--error" style={{ marginTop: 'var(--s-4)' }}>{error}</div>}
-            <button className="btn btn--primary btn--block btn--lg" style={{ marginTop: 'var(--s-5)' }}
-                    onClick={buy} disabled={buying}>
-              {buying && <span className="spinner" />}
-              {buying ? 'Opening checkout…' : `Unlock for ${money(preview.price_cents)}`}
+            {error && <div className="alert alert--error u-mt-4">{error}</div>}
+            <button className="btn btn--primary btn--block btn--lg u-mt-5" 
+                    onClick={subscribe} disabled={subscribing}>
+              {subscribing && <span className="spinner" />}
+              {subscribing ? 'Opening checkout…' : 'Subscribe to unlock'}
             </button>
+            <p className="small muted center u-mt-3">
+              Monthly membership · cancel any time
+            </p>
           </>
         )}
       </div>
 
       {preview.samples.length > 0 && (
-        <div style={{ marginTop: 'var(--s-6)' }}>
-          <h3 style={{ marginBottom: 'var(--s-2)' }}>Sample cards</h3>
-          <p className="small muted" style={{ marginBottom: 'var(--s-4)' }}>
-            A few cards from this deck, so you know what you&apos;re getting.
+        <div className="u-mt-6">
+          <h3 className="u-mb-2">Sample cards</h3>
+          <p className="small muted u-mb-4">
+            A few cards from this deck, so you know what you get with membership.
           </p>
           <div className="stack">
             {preview.samples.map((s, i) => (
               <div key={i} className="card">
-                <div style={{ fontWeight: 650, marginBottom: 4 }}>{s.sample_question}</div>
+                <div className="u-fw-650 u-mb-1">{s.sample_question}</div>
                 <div className="small muted">{s.sample_answer}</div>
               </div>
             ))}

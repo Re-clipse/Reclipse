@@ -29,8 +29,6 @@ export default function DeckPage() {
   const [editing, setEditing] = useState(null); // card being edited
   const [adding, setAdding] = useState(false);
   const [collabCount, setCollabCount] = useState(0);
-  const [sales, setSales] = useState([]);
-  const [price, setPrice] = useState('2.99');
 
   const load = useCallback(async () => {
     if (!user) return;
@@ -44,7 +42,6 @@ export default function DeckPage() {
       if (!d.data) { setStatus('missing'); return; }
       setDeck(d.data); setCards(c.data || []); setQuizCount(q.count || 0);
       setCourses(co.data || []); setStatus('ready');
-      if (d.data.archive_price_cents) setPrice((d.data.archive_price_cents / 100).toFixed(2));
     } catch {
       setStatus('failed');
       return;
@@ -53,10 +50,6 @@ export default function DeckPage() {
     const { count } = await supabase.from('deck_collaborators')
       .select('user_id', { count: 'exact', head: true }).eq('deck_id', id);
     setCollabCount(count || 0);
-
-    const { data: purchases } = await supabase.from('deck_purchases')
-      .select('amount_cents, created_at').eq('deck_id', id);
-    setSales(purchases || []);
   }, [id, user]);
 
   useEffect(() => { load(); }, [load]);
@@ -102,18 +95,13 @@ export default function DeckPage() {
 
   async function toggleArchive() {
     const listing = !deck.is_archived;
-    const cents = Math.round(parseFloat(price || '0') * 100);
-    if (listing && (!cents || cents < 50)) {
-      toast('Set a price of at least $0.50 to list this deck', 'error');
-      return;
-    }
     // Listing implies sharing the course label, so the archive can group by course.
     const course_label = courses.find((c) => c.id === deck.course_id)?.name || deck.course_label || null;
     await supabase.from('decks')
-      .update({ is_archived: listing, archive_price_cents: listing ? cents : null, course_label })
+      .update({ is_archived: listing, archive_price_cents: null, course_label })
       .eq('id', id);
-    setDeck((d) => ({ ...d, is_archived: listing, archive_price_cents: listing ? cents : null, course_label }));
-    toast(listing ? 'Deck listed in the archive' : 'Deck unlisted');
+    setDeck((d) => ({ ...d, is_archived: listing, archive_price_cents: null, course_label }));
+    toast(listing ? 'Deck shared to the archive' : 'Deck removed from the archive');
   }
 
   async function duplicate() {
@@ -225,7 +213,7 @@ export default function DeckPage() {
           <div className="card">
             <div className="switch">
               <div>
-                <div style={{ fontWeight: 650 }}>Share this deck</div>
+                <div className="u-fw-650">Share this deck</div>
                 <p className="small muted">Anyone with the link can view and copy it. No login needed.</p>
               </div>
               <button className={deck.is_public ? 'btn btn--primary' : 'btn btn--ghost'} onClick={toggleShare}>
@@ -233,7 +221,7 @@ export default function DeckPage() {
               </button>
             </div>
             {deck.is_public && shareUrl && (
-              <div className="row" style={{ marginTop: 'var(--s-4)' }}>
+              <div className="row u-mt-4">
                 <input className="input" readOnly value={shareUrl} onFocus={(e) => e.target.select()} />
                 <button className="btn btn--ghost" onClick={() => {
                   navigator.clipboard?.writeText(shareUrl); toast('Share link copied', 'success');
@@ -245,10 +233,10 @@ export default function DeckPage() {
           <div className="card">
             <div className="switch">
               <div>
-                <div style={{ fontWeight: 650 }}>Collaborative editing</div>
+                <div className="u-fw-650">Collaborative editing</div>
                 <p className="small muted">
-                  Anyone with this link can join and add or edit flashcards in this deck —
-                  good for a study group building a deck together.
+                  Anyone with this link can join and add or edit flashcards in this deck.
+                  Good for a study group building a deck together.
                 </p>
               </div>
               <button className={deck.collab_enabled ? 'btn btn--primary' : 'btn btn--ghost'} onClick={toggleCollab}>
@@ -257,7 +245,7 @@ export default function DeckPage() {
             </div>
             {deck.collab_enabled && deck.collab_id && (
               <>
-                <div className="row" style={{ marginTop: 'var(--s-4)' }}>
+                <div className="row u-mt-4">
                   <input className="input" readOnly
                          value={`${typeof window !== 'undefined' ? window.location.origin : ''}/collab/${deck.collab_id}`}
                          onFocus={(e) => e.target.select()} />
@@ -266,7 +254,7 @@ export default function DeckPage() {
                     toast('Collaboration link copied', 'success');
                   }}>Copy</button>
                 </div>
-                <p className="small muted" style={{ marginTop: 'var(--s-3)' }}>
+                <p className="small muted u-mt-3">
                   {collabCount} {collabCount === 1 ? 'person has' : 'people have'} joined so far.
                 </p>
               </>
@@ -276,28 +264,20 @@ export default function DeckPage() {
           <div className="card">
             <div className="switch">
               <div>
-                <div style={{ fontWeight: 650 }}>Sell in the Campus Archive</div>
+                <div className="u-fw-650">Share in the Campus Archive</div>
                 <p className="small muted">
-                  List this deck for future students taking the same course. They pay once and keep it.
+                  Share this deck with future students taking the same course. Campus Archive members
+                  can study it. There&apos;s no price to set, and sharing doesn&apos;t earn payments.
                 </p>
               </div>
               <button className={deck.is_archived ? 'btn btn--primary' : 'btn btn--ghost'} onClick={toggleArchive}>
-                {deck.is_archived ? 'Listed' : 'List it'}
+                {deck.is_archived ? 'Shared' : 'Share it'}
               </button>
             </div>
 
-            {!deck.is_archived && (
-              <div className="field" style={{ marginTop: 'var(--s-4)' }}>
-                <label className="label" htmlFor="price">Price (CAD)</label>
-                <input id="price" className="input" type="number" min="0.50" step="0.50"
-                       value={price} onChange={(e) => setPrice(e.target.value)} style={{ maxWidth: 160 }} />
-                <p className="small muted">Most course decks sit around $2.99. Minimum $0.50.</p>
-              </div>
-            )}
-
             {deck.is_archived && (
               <>
-                <div className="row" style={{ marginTop: 'var(--s-4)' }}>
+                <div className="row u-mt-4">
                   <input className="input" readOnly
                          value={`${typeof window !== 'undefined' ? window.location.origin : ''}/archive/${id}`}
                          onFocus={(e) => e.target.select()} />
@@ -306,26 +286,14 @@ export default function DeckPage() {
                     toast('Listing link copied', 'success');
                   }}>Copy</button>
                 </div>
-                <div className="stat-grid" style={{ marginTop: 'var(--s-5)', marginBottom: 0 }}>
-                  <div className="stat">
-                    <div className="stat__n">{sales.length}</div>
-                    <div className="stat__l">Sales</div>
-                  </div>
-                  <div className="stat">
-                    <div className="stat__n">
-                      ${(sales.reduce((n, s) => n + (s.amount_cents || 0), 0) / 100).toFixed(2)}
-                    </div>
-                    <div className="stat__l">Gross</div>
-                  </div>
-                </div>
               </>
             )}
           </div>
 
           <div className="card">
             <div style={{ fontWeight: 650, marginBottom: 'var(--s-1)' }}>Export cards</div>
-            <p className="small muted" style={{ marginBottom: 'var(--s-4)' }}>
-              Download your cards to use elsewhere — CSV for spreadsheets, or a tab-separated
+            <p className="small muted u-mb-4">
+              Download your cards to use elsewhere: CSV for spreadsheets, or a tab-separated
               file that imports straight into Anki or Quizlet.
             </p>
             <div className="row">
@@ -340,7 +308,7 @@ export default function DeckPage() {
 
           <div className="card switch">
             <div>
-              <div style={{ fontWeight: 650 }}>Duplicate deck</div>
+              <div className="u-fw-650">Duplicate deck</div>
               <p className="small muted">Make an editable copy, leaving this one untouched.</p>
             </div>
             <button className="btn btn--ghost" onClick={duplicate}>Duplicate</button>

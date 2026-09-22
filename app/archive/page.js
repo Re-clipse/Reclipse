@@ -1,38 +1,93 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import PageHeader, { ICONS } from '@/components/PageHeader';
+import { useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import PageHeader, { ICONS, ACCENTS } from '@/components/PageHeader';
 import { supabase } from '@/lib/supabaseClient';
 import { withTimeout } from '@/lib/net';
 import Mascot from '@/components/Mascot';
+import LoadError from '@/components/LoadError';
+import { hasArchiveAccess, startArchiveCheckout, openBillingPortal } from '@/lib/archive';
 
-const money = (c) => `$${(c / 100).toFixed(2)}`;
+// "BI110 — Cell Biology" -> { code: 'BI110', name: 'Cell Biology' }
+function splitCourse(label) {
+  const m = (label || '').split(/\s+[—–-]\s+/);
+  return m.length > 1 ? { code: m[0], name: m.slice(1).join(' - ') } : { code: label || 'Other', name: '' };
+}
 
 export default function ArchivePage() {
   const [decks, setDecks] = useState(null);
   const [q, setQ] = useState('');
   const [error, setError] = useState('');
+  const [member, setMember] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const router = useRouter();
 
-  async function load(course) {
+  async function load(query) {
     setError('');
     try {
       const { data, error } = await withTimeout(supabase.rpc('archive_listings', {
-        p_course: course?.trim() || null, p_limit: 40,
+        p_course: query?.trim() || null, p_limit: 40,
       }), 12000, 'archive');
       if (error) { setError("Couldn't load the archive right now."); setDecks([]); return; }
       setDecks(data || []);
     } catch {
-      setError("Couldn't load the archive — this is usually a connection hiccup.");
+      setError("Couldn't load the archive. This is usually a connection hiccup.");
       setDecks([]);
     }
   }
 
   useEffect(() => { load(''); }, []);
+  useEffect(() => { hasArchiveAccess().then(setMember).catch(() => setMember(false)); }, []);
+
+  async function membershipAction(fn) {
+    setError(''); setBusy(true);
+    try {
+      const r = await fn();
+      if (r.needsLogin) { router.push('/login?next=%2Farchive'); return; }
+      if (r.alreadySubscribed) { setMember(true); return; }
+      if (!r.ok) { setError(r.error || 'Something went wrong. Please try again.'); return; }
+      window.location.href = r.url;
+    } catch { setError('Could not reach the server.'); } finally { setBusy(false); }
+  }
+
+  // One shelf per course, most-studied sets first (the RPC already orders by activity).
+  const shelves = useMemo(() => {
+    const m = new Map();
+    for (const d of decks || []) {
+      const key = d.course_label || '';
+      if (!m.has(key)) m.set(key, []);
+      m.get(key).push(d);
+    }
+    return [...m.entries()]
+      .map(([label, items]) => ({ label, ...splitCourse(label), items, best: items[0]?.activity || 0 }))
+      .sort((x, y) => y.best - x.best);
+  }, [decks]);
 
   return (
     <main className="page page--wide">
       <PageHeader accent="amber" icon={ICONS.archive} title="Campus Archive"
-        subtitle="Complete study sets for specific courses, made by students who already sat the exams. One-time unlock, yours permanently." />
+        subtitle="Complete study sets for specific courses, made by students who already sat the exams." />
+
+      {member === false && (
+        <div className="card member-card">
+          <Mascot mood="happy" size={64} />
+          <div className="member-card__text">
+            <strong>Study every set in the archive</strong>
+            <p className="small muted">One monthly membership unlocks all the flashcards and quizzes below. Cancel any time.</p>
+          </div>
+          <button className="btn btn--page" disabled={busy}
+                  style={{ '--pa': ACCENTS.amber.solid }} onClick={() => membershipAction(() => startArchiveCheckout())}>
+            {busy ? 'Opening…' : 'Get access'}
+          </button>
+        </div>
+      )}
+      {member === true && (
+        <p className="small muted member-note">
+          You have full Archive access.{' '}
+          <button className="linklike" disabled={busy} onClick={() => membershipAction(openBillingPortal)}>Manage membership</button>
+        </p>
+      )}
 
       <form className="toolbar" onSubmit={(e) => { e.preventDefault(); load(q); }}>
         <div className="search">
@@ -45,14 +100,23 @@ export default function ArchivePage() {
         <button className="btn btn--ghost">Search</button>
       </form>
 
-      {error && <div className="alert alert--error">{error}</div>}
+      {error && decks && decks.length > 0 && <div className="alert alert--error">{error}</div>}
 
       {decks === null ? (
-        <div className="stack">{[0, 1, 2].map((i) => <div key={i} className="skeleton" style={{ height: 76 }} />)}</div>
+        <div className="stack">
+          {[0, 1].map((i) => (
+            <div key={i}>
+              <div className="skeleton" style={{ height: 28, width: 220, marginBottom: 'var(--s-4)' }} />
+              <div className="shelf__scroll">{[0, 1, 2].map((j) => <div key={j} className="skeleton" style={{ height: 168, flex: '0 0 260px' }} />)}</div>
+            </div>
+          ))}
+        </div>
+      ) : error && decks.length === 0 ? (
+        <LoadError message={error} onRetry={() => { setDecks(null); load(q); }} />
       ) : decks.length === 0 ? (
         <div className="empty">
           <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 'var(--s-3)' }}>
-            <Mascot mood="happy" size={92} />
+            <Mascot mood="thinking" size={92} float />
           </div>
           <h3>Nothing in the archive yet</h3>
           <p>
@@ -62,19 +126,36 @@ export default function ArchivePage() {
           <a href="/decks" className="btn btn--primary">My decks</a>
         </div>
       ) : (
-        <div className="stack">
-          {decks.map((d, i) => (
-            <a key={d.id} href={`/archive/${d.id}`}
-               className="card card--link deck rise" style={{ animationDelay: `${Math.min(i, 10) * 30}ms` }}>
-              <div style={{ minWidth: 0 }}>
-                <div className="deck__title">{d.title}</div>
-                <div className="deck__meta">
-                  {d.course_label && <span className="badge">{d.course_label}</span>}
-                  <span>{d.activity} study session{d.activity === 1 ? '' : 's'}</span>
-                </div>
+        <div>
+          {shelves.map((sh, si) => (
+            <section key={sh.label || 'other'} className="shelf">
+              <div className="shelf__head">
+                <span className="badge badge--accent">{sh.code}</span>
+                {sh.name && <h2 className="shelf__title">{sh.name}</h2>}
+                <span className="shelf__count">· {sh.items.length} set{sh.items.length === 1 ? '' : 's'}</span>
               </div>
-              <span className="btn btn--primary">{money(d.price_cents)}</span>
-            </a>
+              <div className="shelf__scroll">
+                {sh.items.map((d, i) => {
+                  const popular = topActivity > 0 && d.activity === topActivity;
+                  return (
+                    <a key={d.id} href={`/archive/${d.id}`} className="card card--link shelf-tile rise"
+                       style={{ animationDelay: `${Math.min(si * 3 + i, 10) * 40}ms` }}>
+                      {popular && <span className="badge badge--accent shelf-tile__flag">Most studied</span>}
+                      <div className="shelf-tile__title">{d.title}</div>
+                      <div className="shelf-tile__foot">
+                        <span className="shelf-tile__sessions">
+                          {d.activity} study session{d.activity === 1 ? '' : 's'}
+                        </span>
+                        <span className="arch-tile__cta">
+                          View
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+                        </span>
+                      </div>
+                    </a>
+                  );
+                })}
+              </div>
+            </section>
           ))}
         </div>
       )}

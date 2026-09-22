@@ -3,6 +3,8 @@
 import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
+import LoadError from '@/components/LoadError';
+import { withTimeout } from '@/lib/net';
 import { useAuth } from '@/lib/useAuth';
 import Mascot from '@/components/Mascot';
 import { useCelebrate } from '@/components/Celebrate';
@@ -21,6 +23,7 @@ function QuizInner() {
   const [deck, setDeck] = useState(null);
   const [questions, setQuestions] = useState([]);
   const [status, setStatus] = useState('loading');
+  const [reload, setReload] = useState(0);
   const [i, setI] = useState(0);
   const [picked, setPicked] = useState(null);
   const [correct, setCorrect] = useState(0);
@@ -32,15 +35,20 @@ function QuizInner() {
     if (!user) return;
     if (!deckId) { setStatus('empty'); return; }
     (async () => {
-      const [{ data: d }, { data: q }] = await Promise.all([
-        supabase.from('decks').select('*').eq('id', deckId).maybeSingle(),
-        supabase.from('quiz_questions').select('*').eq('deck_id', deckId),
-      ]);
-      if (!d) { setStatus('error'); return; }
-      setDeck(d); setQuestions(q || []);
-      setStatus((q || []).length ? 'ready' : 'empty');
+      try {
+        const [{ data: d }, { data: q }] = await withTimeout(Promise.all([
+          supabase.from('decks').select('*').eq('id', deckId).maybeSingle(),
+          supabase.from('quiz_questions').select('*').eq('deck_id', deckId),
+        ]), 12000, 'quiz');
+        if (!d) { setStatus('error'); return; }
+        setDeck(d); setQuestions(q || []);
+        setStatus((q || []).length ? 'ready' : 'empty');
+      } catch {
+        // Timed out or offline: offer a retry rather than a skeleton that never ends.
+        setStatus('failed');
+      }
     })();
-  }, [user, deckId]);
+  }, [user, deckId, reload]);
 
   const q = questions[i];
 
@@ -97,6 +105,9 @@ function QuizInner() {
   if (authLoading || status === 'loading') {
     return <main className="page"><div className="skeleton" style={{ height: 360 }} /></main>;
   }
+  if (status === 'failed') {
+    return <main className="page"><LoadError onRetry={() => { setStatus('loading'); setReload((n) => n + 1); }} /></main>;
+  }
   if (status === 'error') {
     return <main className="page"><div className="empty"><h3>We couldn&apos;t open that quiz</h3>
       <a href="/decks" className="btn btn--primary">Back to my decks</a></div></main>;
@@ -113,18 +124,18 @@ function QuizInner() {
     if (onboarding) {
       return (
         <main className="page page--narrow">
-          <div className="progress" style={{ marginBottom: 'var(--s-6)' }}><div className="progress__bar" style={{ width: '100%' }} /></div>
-          <div className="card center animate-in" style={{ padding: 'var(--s-7)' }}>
-            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 'var(--s-3)' }}>
+          <div className="progress u-mb-6"><div className="progress__bar" style={{ width: '100%' }} /></div>
+          <div className="card center animate-in u-p-7">
+            <div className="mascot-wrap">
               <Mascot mood="excited" size={120} bounce />
             </div>
-            <span className="badge">Step 3 of 3 — complete</span>
+            <span className="badge">Step 3 of 3: complete</span>
             <h1 style={{ fontSize: 'var(--text-2xl)', marginTop: 'var(--s-4)' }}>You&apos;re all set</h1>
-            <p className="muted" style={{ marginTop: 'var(--s-3)' }}>
-              Scored {correct} of {questions.length} on the tutorial quiz. Your first deck is saved —
-              from here you can upload more notes, review on a schedule, or share a deck with your study group.
+            <p className="muted u-mt-3">
+              Scored {correct} of {questions.length} on the tutorial quiz. Your first deck is saved.
+              From here you can upload more notes, review on a schedule, or share a deck with your study group.
             </p>
-            <div className="row actions-sm-stack" style={{ justifyContent: 'center', marginTop: 'var(--s-6)' }}>
+            <div className="row actions-sm-stack u-row-center u-mt-6">
               <a href="/decks" className="btn btn--primary btn--lg">Go to my decks</a>
             </div>
           </div>
@@ -134,20 +145,20 @@ function QuizInner() {
 
     return (
       <main className="page page--narrow">
-        <div className="card center animate-in" style={{ padding: 'var(--s-7)' }}>
-          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 'var(--s-3)' }}>
+        <div className="card center animate-in u-p-7">
+          <div className="mascot-wrap">
             <Mascot mood={pct >= 70 ? 'excited' : 'determined'} size={110} bounce />
           </div>
           <p className="muted small">You scored</p>
           <div className="score">{pct}%</div>
-          <p className="muted" style={{ marginTop: 'var(--s-2)' }}>
+          <p className="muted u-mt-2">
             {correct} of {questions.length} correct
-            {pct === 100 ? ' — perfect run.' : pct >= 70 ? ' — solid. Review the misses below.' : ' — worth another pass through the flashcards.'}
+            {pct === 100 ? ' Perfect run.' : pct >= 70 ? ' Solid. Review the misses below.' : ' Worth another pass through the flashcards.'}
           </p>
-          <p style={{ marginTop: 'var(--s-3)', fontWeight: 600, color: 'var(--violet-700)' }}>
+          <p className="u-mt-3 u-accent-text">
             {encourage(pct === 100 ? 'perfectQuiz' : pct >= 70 ? 'goodQuiz' : 'toughQuiz', correct)}
           </p>
-          <div className="row actions-sm-stack" style={{ justifyContent: 'center', marginTop: 'var(--s-6)' }}>
+          <div className="row actions-sm-stack u-row-center u-mt-6">
             <button className="btn btn--primary" onClick={() => {
               setI(0); setPicked(null); setCorrect(0); setWrong([]); logged.current = false; startedAt.current = Date.now();
             }}>Retake</button>
@@ -157,15 +168,15 @@ function QuizInner() {
         </div>
 
         {wrong.length > 0 && (
-          <div style={{ marginTop: 'var(--s-6)' }}>
-            <h3 style={{ marginBottom: 'var(--s-4)' }}>What to review</h3>
+          <div className="u-mt-6">
+            <h3 className="u-mb-4">What to review</h3>
             <div className="stack">
               {wrong.map((w) => (
                 <div key={w.id} className="card">
                   <div style={{ fontWeight: 650, marginBottom: 'var(--s-2)' }}>{w.question}</div>
                   <p className="small" style={{ color: 'var(--error)' }}>You chose: {w.options[w.chosen]}</p>
                   <p className="small" style={{ color: 'var(--success)' }}>Correct: {w.options[w.correct_index]}</p>
-                  {w.explanation && <p className="small muted" style={{ marginTop: 'var(--s-2)' }}>{w.explanation}</p>}
+                  {w.explanation && <p className="small muted u-mt-2">{w.explanation}</p>}
                 </div>
               ))}
             </div>
@@ -183,7 +194,7 @@ function QuizInner() {
       <div className="study__bar">
         <a href="/decks" className="btn btn--quiet" aria-label="Back">←</a>
         <div className="progress"><div className="progress__bar" style={{ width: `${(i / questions.length) * 100}%` }} /></div>
-        <span className="small muted" style={{ flex: 'none' }}>{i + 1} / {questions.length}</span>
+        <span className="small muted u-flex-none">{i + 1} / {questions.length}</span>
       </div>
 
       <h2 style={{ fontSize: 'var(--text-lg)', marginBottom: 'var(--s-4)' }}>{deck?.title}</h2>
@@ -211,7 +222,7 @@ function QuizInner() {
               <strong>{picked === q.correct_index ? 'Correct' : 'Not quite'}</strong>
               {q.explanation || 'No explanation was provided for this question.'}
             </div>
-            <button className="btn btn--primary btn--block btn--lg" style={{ marginTop: 'var(--s-5)' }} onClick={next}>
+            <button className="btn btn--primary btn--block btn--lg u-mt-5"  onClick={next}>
               {i + 1 === questions.length ? 'See results' : 'Next question'} <span className="kbd hide-sm">Enter</span>
             </button>
           </>

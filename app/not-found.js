@@ -8,7 +8,7 @@ export default function NotFound() {
           <Mascot mood="thinking" size={110} float />
         </div>
         <h3>This page slipped into shadow</h3>
-        <p>That link doesn&apos;t go anywhere — it may have moved, or the deck was deleted.</p>
+        <p>That link doesn&apos;t go anywhere. It may have moved, or the deck was deleted.</p>
         <a href="/decks" className="btn btn--primary btn--lg">Back to my decks</a>
       </div>
     </main>

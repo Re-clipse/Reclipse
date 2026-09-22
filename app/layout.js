@@ -6,9 +6,9 @@ import { CelebrateProvider } from '@/components/Celebrate';
 import CommandBar from '@/components/CommandBar';
 
 export const metadata = {
-  title: { default: 'Reclipse — Stop copying the board. Start remembering it.', template: '%s — Reclipse' },
+  title: { default: 'Reclipse: Stop copying the board. Start remembering it.', template: '%s | Reclipse' },
   description:
-    'Upload your lecture notes and slides. Reclipse turns them into flashcards and quizzes built on active recall, so class time is for listening — not transcribing.',
+    'Upload your lecture notes and slides. Reclipse turns them into flashcards and quizzes built on active recall, so class time is for listening, not transcribing.',
   manifest: '/manifest.json',
   icons: { icon: '/icon.svg', apple: '/icon.svg' },
   appleWebApp: { capable: true, title: 'Reclipse', statusBarStyle: 'default' },
@@ -50,7 +50,7 @@ export default function RootLayout({ children }) {
           <CommandBar />
           {children}
           <footer className="footer">
-            Reclipse — built by students, for students at Wilfrid Laurier.
+            Reclipse, built by students, for students at Wilfrid Laurier.
           </footer>
         </ToastProvider>
         </CelebrateProvider>
