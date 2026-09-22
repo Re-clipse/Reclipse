@@ -35,12 +35,12 @@ export function GoalRing({ done, goal, pct }) {
         <circle className="goal-ring__track" cx="42" cy="42" r={R} strokeWidth="8" fill="none" />
         <circle className="goal-ring__fill" cx="42" cy="42" r={R} strokeWidth="8" fill="none"
                 strokeDasharray={C} strokeDashoffset={off} />
-        <text className="goal-ring__center" x="42" y="42" text-anchor="middle" dominant-baseline="central"
+        <text className="goal-ring__center" x="42" y="42" textAnchor="middle" dominantBaseline="central"
               transform="rotate(90 42 42)">{pct}%</text>
       </svg>
       <div className="goal-ring__label">
         <strong>{done} / {goal}</strong>
-        <p>{done >= goal ? 'Daily goal hit — nice.' : 'cards reviewed today'}</p>
+        <p>{done >= goal ? 'Daily goal hit. Nice.' : 'cards reviewed today'}</p>
       </div>
     </div>
   );
