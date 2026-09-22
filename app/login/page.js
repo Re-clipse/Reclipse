@@ -17,6 +17,7 @@ function LoginInner() {
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPw, setShowPw] = useState(false);
 
   // Already signed in? Don't make them log in again.
   useEffect(() => {
@@ -27,6 +28,13 @@ function LoginInner() {
 
   function switchMode() {
     setMode(mode === 'login' ? 'signup' : 'login');
+    setError('');
+    setNotice('');
+  }
+
+  function chooseMode(m) {
+    if (m === mode) return;
+    setMode(m);
     setError('');
     setNotice('');
   }
@@ -82,16 +90,48 @@ function LoginInner() {
   const isSignup = mode === 'signup';
 
   return (
-    <main className="page page--narrow">
-      <div className="card animate-in" style={{ padding: 'var(--s-6)' }}>
-        <div className="center" style={{ marginBottom: 'var(--s-5)' }}>
-          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 'var(--s-3)' }}>
-            <Mascot mood={isSignup ? 'excited' : 'wave'} size={92} float />
+    <main className="page page--wide auth">
+      <aside className="auth__brand" aria-hidden="false">
+        <div className="auth__blob auth__blob--a" aria-hidden="true" />
+        <div className="auth__blob auth__blob--b" aria-hidden="true" />
+
+        <div className="auth__banner">
+          <div className="auth__glow auth__glow--sm" aria-hidden="true" />
+          <Mascot mood={isSignup ? 'excited' : 'happy'} size={56} />
+          <strong>Study less. Remember more.</strong>
+        </div>
+
+        <div className="auth__body">
+          <h1 className="auth__headline">Study less.<br />Remember more.</h1>
+          <p className="auth__pitch">Turn your lecture notes into flashcards and quizzes built on active recall.</p>
+          <div className="auth__luna">
+            <div className="auth__glow" aria-hidden="true" />
+            <Mascot mood={isSignup ? 'excited' : 'happy'} size={190} float />
           </div>
-          <h1 style={{ fontSize: 'var(--text-2xl)' }}>
-            {isSignup ? 'Create your account' : 'Welcome back'}
-          </h1>
-          <p className="muted small" style={{ marginTop: 'var(--s-2)' }}>
+          <ul className="auth__points">
+            {['Snap a photo of your notes', 'Cards in seconds', 'Spaced repetition built in'].map((t) => (
+              <li key={t}>
+                <span className="auth__check" aria-hidden="true">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                </span>
+                {t}
+              </li>
+            ))}
+          </ul>
+        </div>
+      </aside>
+
+      <div className="card animate-in auth__card">
+        <div className="seg" role="tablist" aria-label="Log in or sign up">
+          <button type="button" role="tab" aria-selected={!isSignup}
+                  className={`seg__btn${!isSignup ? ' seg__btn--on' : ''}`} onClick={() => chooseMode('login')}>Log in</button>
+          <button type="button" role="tab" aria-selected={isSignup}
+                  className={`seg__btn${isSignup ? ' seg__btn--on' : ''}`} onClick={() => chooseMode('signup')}>Sign up</button>
+        </div>
+
+        <div className="u-mb-5">
+          <h2 className="auth__title">{isSignup ? 'Create your account' : 'Welcome back'}</h2>
+          <p className="muted small u-mt-2">
             {isSignup
               ? 'Turn your next lecture into a study set in about a minute.'
               : 'Log in to pick up where you left off.'}
@@ -110,17 +150,26 @@ function LoginInner() {
 
           <div className="field">
             <label className="label" htmlFor="password">Password</label>
-            <input
-              id="password" className="input" type="password"
-              autoComplete={isSignup ? 'new-password' : 'current-password'}
-              placeholder={isSignup ? 'At least 6 characters' : 'Your password'}
-              value={password} onChange={(e) => setPassword(e.target.value)} required
-            />
+            <div className="pw">
+              <input
+                id="password" className="input pw__input" type={showPw ? 'text' : 'password'}
+                autoComplete={isSignup ? 'new-password' : 'current-password'}
+                placeholder={isSignup ? 'At least 6 characters' : 'Your password'}
+                value={password} onChange={(e) => setPassword(e.target.value)} required
+              />
+              <button type="button" className="pw__toggle" onClick={() => setShowPw((v) => !v)}
+                      aria-label={showPw ? 'Hide password' : 'Show password'} aria-pressed={showPw}>
+                {showPw ? (
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-10-8-10-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 10 8 10 8a18.5 18.5 0 0 1-2.16 3.19"/><path d="M1 1l22 22"/></svg>
+                ) : (
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                )}
+              </button>
+            </div>
           </div>
 
           {!isSignup && (
-            <button type="button" onClick={sendReset} className="btn btn--quiet"
-                    style={{ alignSelf: 'flex-start', padding: '2px 4px', fontSize: 'var(--text-sm)' }}>
+            <button type="button" onClick={sendReset} className="btn btn--quiet auth__forgot">
               Forgot your password?
             </button>
           )}
@@ -134,10 +183,9 @@ function LoginInner() {
           </button>
         </form>
 
-        <p className="center small muted" style={{ marginTop: 'var(--s-5)' }}>
+        <p className="center small muted u-mt-5">
           {isSignup ? 'Already have an account?' : "Don't have an account yet?"}{' '}
-          <button type="button" onClick={switchMode} className="btn btn--quiet"
-                  style={{ color: 'var(--violet-700)', fontWeight: 700, padding: '2px 4px' }}>
+          <button type="button" onClick={switchMode} className="btn btn--quiet auth__switch">
             {isSignup ? 'Log in' : 'Sign up free'}
           </button>
         </p>
@@ -148,7 +196,7 @@ function LoginInner() {
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={<main className="page page--narrow"><div className="skeleton" style={{ height: 380 }} /></main>}>
+    <Suspense fallback={<main className="page page--wide"><div className="skeleton" style={{ height: 480 }} /></main>}>
       <LoginInner />
     </Suspense>
   );
