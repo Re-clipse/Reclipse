@@ -28,3 +28,7 @@ next-env.d.ts
 # editor
 .vscode/
 .idea/
+
+# design-tool scratch (Superdesign CLI project state, local skill config)
+.claude/
+.superdesign/
