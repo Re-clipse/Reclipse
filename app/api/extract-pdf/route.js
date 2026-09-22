@@ -87,7 +87,7 @@ export async function POST(request) {
       source = 'pdf';
     } else if (isImage) {
       if (buffer.length > MAX_IMAGE_BYTES) {
-        return Response.json({ error: 'That image is too large — please use one under 5MB.' }, { status: 400 });
+        return Response.json({ error: 'That image is too large. Please use one under 5MB.' }, { status: 400 });
       }
       const mediaType = IMAGE_TYPES.includes(file.type)
         ? file.type
@@ -103,7 +103,7 @@ export async function POST(request) {
     if (!text || text.length < 30) {
       return Response.json({
         error: isPdf
-          ? "We couldn't find readable text in that PDF. If it's a scan, try uploading a photo of the pages instead — we can read those."
+          ? "We couldn't find readable text in that PDF. If it's a scan, try uploading a photo of the pages instead. We can read those."
           : "We couldn't find readable text in that file.",
       }, { status: 400 });
     }

@@ -9,6 +9,8 @@ import Mascot from '@/components/Mascot';
 import { useCelebrate } from '@/components/Celebrate';
 import { encourage } from '@/lib/encourage';
 import { play } from '@/lib/sound';
+import LoadError from '@/components/LoadError';
+import { withTimeout } from '@/lib/net';
 
 const RATINGS = [
   { v: 0, label: 'Again', cls: 'btn--again' },
@@ -30,6 +32,7 @@ function StudyInner() {
   const [total, setTotal] = useState(0);
   const [revealed, setRevealed] = useState(false);
   const [status, setStatus] = useState('loading');
+  const [reload, setReload] = useState(0);
   const [done, setDone] = useState(0);
   const [again, setAgain] = useState(0);
   const startedAt = useRef(Date.now());
@@ -38,6 +41,7 @@ function StudyInner() {
   useEffect(() => {
     if (!user) return;
     (async () => {
+     try {
       let cards = [];
       if (dueOnly) {
         const { data: prog } = await supabase.from('card_progress')
@@ -61,8 +65,11 @@ function StudyInner() {
       }
       if (!cards.length) { setStatus('empty'); return; }
       setQueue(cards); setTotal(cards.length); setStatus('ready');
+     } catch {
+      setStatus('failed');
+     }
     })();
-  }, [user, deckId, dueOnly]);
+  }, [user, deckId, dueOnly, reload]);
 
   const current = queue[0];
 
@@ -124,6 +131,9 @@ function StudyInner() {
   if (authLoading || status === 'loading') {
     return <main className="page"><div className="skeleton" style={{ height: 360 }} /></main>;
   }
+  if (status === 'failed') {
+    return <main className="page"><LoadError onRetry={() => { setStatus('loading'); setReload((n) => n + 1); }} /></main>;
+  }
   if (status === 'error') {
     return <main className="page"><div className="empty">
       <h3>We couldn&apos;t open that deck</h3><p>It may have been deleted.</p>
@@ -147,7 +157,7 @@ function StudyInner() {
           <h1 style={{ fontSize: 'var(--text-2xl)' }}>Session complete</h1>
           <p className="muted" style={{ marginTop: 'var(--s-3)' }}>
             {total} card{total === 1 ? '' : 's'} in about {mins} minute{mins === 1 ? '' : 's'}.
-            {again > 0 ? ` ${again} needed a second look — they'll come back sooner.` : ' Clean run.'}
+            {again > 0 ? ` ${again} needed a second look, so they'll come back sooner.` : ' Clean run.'}
           </p>
           <p style={{ marginTop: 'var(--s-3)', fontWeight: 600, color: 'var(--violet-700)' }}>
             {encourage('sessionDone', total + again)}
@@ -168,21 +178,25 @@ function StudyInner() {
   return (
     <main className="page page--narrow">
       <div className="study__bar">
-        <a href="/decks" className="btn btn--quiet" aria-label="Back">←</a>
+        <a href="/decks" className="btn btn--quiet study__back" aria-label="Back">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>
+        </a>
         <div className="progress"><div className="progress__bar" style={{ width: `${pct}%` }} /></div>
         <span className="small muted" style={{ flex: 'none' }}>{queue.length} left</span>
       </div>
 
-      <h2 style={{ fontSize: 'var(--text-lg)', marginBottom: 'var(--s-4)' }}>
+      <h2 className="study__title">
         {dueOnly ? 'Due for review' : deck?.title}
       </h2>
 
-      <div className={`flip${revealed ? ' flip--revealed' : ''}`}>
+      <div className={`flip flip--stack${revealed ? ' flip--revealed' : ''}`}>
+        <div className="flip__stack flip__stack--2" aria-hidden="true" />
+        <div className="flip__stack flip__stack--1" aria-hidden="true" />
         <div className="flip__inner" onClick={() => { setRevealed((r) => !r); play('flip'); }} role="button" tabIndex={0}>
           <div className="flip__face">
             <span className="flip__label">{isCloze ? 'Fill in the blank' : 'Question'}</span>
             <p className="flip__text">{current.question}</p>
-            <span className="flip__cue">Answer out loud first — <span className="kbd">Space</span> to flip</span>
+            <span className="flip__cue">Answer out loud first, then press <span className="kbd">Space</span> to flip</span>
           </div>
           <div className="flip__face flip__face--back">
             <span className="flip__label">Answer</span>
@@ -194,9 +208,11 @@ function StudyInner() {
       {revealed ? (
         <div className="grade animate-in">
           {RATINGS.map((r, i) => (
-            <button key={r.v} className={`btn ${r.cls}`} onClick={() => grade(r.v)}>
-              {r.label}
-              <span className="small" style={{ opacity: .7, marginLeft: 4 }}>{previews[i]}</span>
+            <button key={r.v} className={`btn grade__btn ${r.cls}`} onClick={() => grade(r.v)}>
+              <span className="grade__label">{r.label}</span>
+              <span className="grade__meta">
+                {previews[i]} <span className="kbd" aria-hidden="true">{r.v + 1}</span>
+              </span>
             </button>
           ))}
         </div>
