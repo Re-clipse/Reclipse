@@ -303,6 +303,7 @@ button, input, textarea { font: inherit; color: inherit; }
 .nav__link {
   padding: 8px 12px; border-radius: var(--r-full);
   font-size: var(--text-sm); font-weight: 600; color: var(--ink-2);
+  white-space: nowrap;
   transition: background var(--t-fast) var(--ease), color var(--t-fast) var(--ease);
 }
 .nav__link:hover { background: var(--violet-50); color: var(--violet-700); text-decoration: none; }
@@ -1986,7 +1987,7 @@ body, .card, .nav, .input, .textarea, .btn, .flip__face {
 }
 .lp-cta__copy { max-width: 520px; position: relative; z-index: 1; }
 .lp-cta h2 { color: #fff; font-size: clamp(1.75rem, 3.2vw, 2.5rem); line-height: 1.15; margin-bottom: var(--s-3); }
-.lp-cta p { color: var(--violet-100); margin-bottom: var(--s-5); }
+.lp-cta p { color: #EDE9FE; margin-bottom: var(--s-5); }
 .lp-cta__luna { flex: none; margin-bottom: -18px; filter: drop-shadow(0 8px 24px rgba(250, 204, 21, .3)); }
 :root[data-theme='dark'] .lp-cta { background: linear-gradient(120deg, #4C1D95, #6D28D9 70%, #5B21B6); }
 @media (max-width: 720px) { .lp-cta { flex-direction: column; text-align: center; padding: var(--s-7) var(--s-5) 0; } .lp-cta__luna { margin-bottom: 0; } }
@@ -2034,7 +2035,7 @@ body, .card, .nav, .input, .textarea, .btn, .flip__face {
 .auth__banner { display: none; position: relative; z-index: 1; align-items: center; gap: var(--s-3); }
 .auth__banner strong { font-size: var(--text-lg); letter-spacing: -0.02em; color: #fff; }
 .auth__headline { color: #fff; font-size: 2.75rem; line-height: 1.08; letter-spacing: -0.035em; }
-.auth__pitch { color: var(--violet-100); font-size: var(--text-lg); margin-top: var(--s-4); max-width: 26em; }
+.auth__pitch { color: #EDE9FE; font-size: var(--text-lg); margin-top: var(--s-4); max-width: 26em; }
 .auth__luna { position: relative; display: flex; justify-content: center; align-items: center; margin: var(--s-6) 0; }
 .auth__glow { position: absolute; width: 250px; height: 250px; border-radius: 50%; background: radial-gradient(circle, rgba(250, 204, 21, .5), rgba(250, 204, 21, 0) 68%); }
 .auth__glow--sm { width: 72px; height: 72px; left: -8px; }
