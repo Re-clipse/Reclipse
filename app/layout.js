@@ -1,9 +1,11 @@
+import { Suspense } from 'react';
 import './globals.css';
 import Nav from '@/components/Nav';
 import AmbientBg from '@/components/AmbientBg';
 import { ToastProvider } from '@/components/Toast';
 import { CelebrateProvider } from '@/components/Celebrate';
 import CommandBar from '@/components/CommandBar';
+import ReferralCapture from '@/components/ReferralCapture';
 
 export const metadata = {
   title: { default: 'Reclipse: Stop copying the board. Start remembering it.', template: '%s | Reclipse' },
@@ -48,6 +50,7 @@ export default function RootLayout({ children }) {
           <AmbientBg />
           <Nav />
           <CommandBar />
+          <Suspense fallback={null}><ReferralCapture /></Suspense>
           {children}
           <footer className="footer">
             Reclipse, built by students, for students at Wilfrid Laurier.

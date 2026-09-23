@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import Mascot from '@/components/Mascot';
+import { storedReferralCode, clearStoredReferralCode } from '@/components/ReferralCapture';
 
 function LoginInner() {
   const params = useSearchParams();
@@ -18,6 +19,9 @@ function LoginInner() {
   const [notice, setNotice] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPw, setShowPw] = useState(false);
+  // Pre-filled from a ?ref= link if one was clicked, but always editable —
+  // someone who got a code verbally or by text can type it in directly.
+  const [refCode, setRefCode] = useState(() => params.get('ref') || storedReferralCode() || '');
 
   // Already signed in? Don't make them log in again.
   useEffect(() => {
@@ -65,6 +69,16 @@ function LoginInner() {
         const { data, error } = await supabase.auth.signUp({ email, password });
         if (error) throw error;
         if (data.session) {
+          const code = refCode.trim().toUpperCase();
+          if (code) {
+            // Best-effort: a failure here should never block a fresh account
+            // from reaching the app. claim_referral is safe to skip/retry —
+            // it only sets referred_by if it's still unset, and silently
+            // no-ops on an unknown or self-referral code.
+            supabase.rpc('claim_referral', { p_code: code })
+              .then(() => clearStoredReferralCode())
+              .catch(() => {});
+          }
           router.push(params.get('next') ? next : '/welcome');
           return;
         }
@@ -167,6 +181,16 @@ function LoginInner() {
               </button>
             </div>
           </div>
+
+          {isSignup && (
+            <div className="field">
+              <label className="label" htmlFor="refcode">Referral code (optional)</label>
+              <input
+                id="refcode" className="input" value={refCode} placeholder="e.g. AB12CD3"
+                onChange={(e) => setRefCode(e.target.value)}
+              />
+            </div>
+          )}
 
           {!isSignup && (
             <button type="button" onClick={sendReset} className="btn btn--quiet auth__forgot">

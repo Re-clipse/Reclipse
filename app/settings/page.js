@@ -18,24 +18,65 @@ export default function SettingsPage() {
   const [loaded, setLoaded] = useState(false);
   const [failed, setFailed] = useState(false);
   const [reload, setReload] = useState(0);
+  const [refCode, setRefCode] = useState(null);
+  const [refCount, setRefCount] = useState(0);
+  const [copiedCode, setCopiedCode] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
 
   useEffect(() => {
     if (!user) return;
     setFailed(false);
     (async () => {
       try {
-        const [{ data: profile }, { data: cs }] = await withTimeout(Promise.all([
+        const [{ data: profile }, { data: cs }, { count }] = await withTimeout(Promise.all([
           supabase.from('profiles').select('display_name').eq('user_id', user.id).maybeSingle(),
           supabase.from('courses').select('*').order('name'),
+          supabase.from('referral_reward_log').select('referred_user_id', { count: 'exact', head: true }),
         ]), 12000, 'settings');
         setName(profile?.display_name || '');
         setCourses(cs || []);
+        setRefCount(count || 0);
         setLoaded(true);
       } catch {
         setFailed(true);
       }
     })();
   }, [user, reload]);
+
+  // Fetched separately (it's a write-on-first-read API call, not a plain
+  // select) so a slow/failed referral-code fetch never blocks the rest of
+  // the page from loading.
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) return;
+        const res = await fetch('/api/referral/code', {
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        });
+        const data = await res.json();
+        if (res.ok) setRefCode(data.code);
+      } catch {}
+    })();
+  }, [user]);
+
+  const refLink = refCode && typeof window !== 'undefined'
+    ? `${window.location.origin}/login?mode=signup&ref=${refCode}` : '';
+
+  function copyRefCode() {
+    navigator.clipboard?.writeText(refCode || '');
+    setCopiedCode(true);
+    toast('Referral code copied', 'success');
+    setTimeout(() => setCopiedCode(false), 2000);
+  }
+
+  function copyRefLink() {
+    navigator.clipboard?.writeText(refLink);
+    setCopiedLink(true);
+    toast('Sign-up link copied', 'success');
+    setTimeout(() => setCopiedLink(false), 2000);
+  }
 
   async function saveName() {
     setSaving(true);
@@ -89,6 +130,39 @@ export default function SettingsPage() {
               </div>
             ))}
           </div>
+        )}
+      </div>
+
+      <div className="card u-mt-5">
+        <div style={{ fontWeight: 650, marginBottom: 'var(--s-1)' }}>Refer a friend</div>
+        <p className="small muted u-mb-4">
+          Share your code with a friend. Once they sign up, enter it, and subscribe to the
+          Campus Archive, you both get a discount on your next month.
+        </p>
+        {refCode ? (
+          <>
+            <div className="row">
+              <input className="input" readOnly value={refCode} onFocus={(e) => e.target.select()}
+                     style={{ fontWeight: 700, letterSpacing: '0.08em' }} />
+              <button type="button" className="btn btn--primary" onClick={copyRefCode}>
+                {copiedCode ? 'Copied' : 'Copy code'}
+              </button>
+            </div>
+            <p className="small muted u-mt-3">
+              Or send the{' '}
+              <button type="button" className="btn btn--quiet" style={{ padding: 0, height: 'auto' }} onClick={copyRefLink}>
+                {copiedLink ? 'link copied' : 'sign-up link'}
+              </button>{' '}
+              — it fills the code in for them automatically.
+            </p>
+          </>
+        ) : (
+          <div className="skeleton" style={{ height: 44 }} />
+        )}
+        {refCount > 0 && (
+          <p className="small muted u-mt-3">
+            {refCount} friend{refCount === 1 ? '' : 's'} rewarded so far.
+          </p>
         )}
       </div>
 

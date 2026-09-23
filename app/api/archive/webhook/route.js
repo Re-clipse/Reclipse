@@ -1,5 +1,5 @@
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
-import { stripe, stripeConfigured } from '@/lib/stripe';
+import { stripe, stripeConfigured, referralCouponId } from '@/lib/stripe';
 
 // Stripe needs the raw, unparsed body to verify its signature.
 export const runtime = 'nodejs';
@@ -113,14 +113,96 @@ async function saveSubscription(admin, sub, knownUserId) {
 
   // Newer Stripe API versions moved the period end onto the subscription item.
   const end = sub.current_period_end ?? sub.items?.data?.[0]?.current_period_end;
+  const customerId = typeof sub.customer === 'string' ? sub.customer : sub.customer?.id;
   const { error } = await admin.from('archive_subscriptions').upsert({
     user_id: userId,
-    stripe_customer_id: typeof sub.customer === 'string' ? sub.customer : sub.customer?.id,
+    stripe_customer_id: customerId,
     stripe_subscription_id: sub.id,
     status: sub.status,
     current_period_end: end ? new Date(end * 1000).toISOString() : null,
     updated_at: new Date().toISOString(),
   }, { onConflict: 'user_id' });
   if (error) { console.error('failed to save subscription:', error); return false; }
+
+  // A referral reward is a nice-to-have on top of a real payment, not part of
+  // the payment record itself — failures here are logged but never turn this
+  // into a 500 (which would make Stripe re-send the whole event, including
+  // the part above that already succeeded).
+  if (sub.status === 'active' && customerId) {
+    try { await grantReferralRewardIfDue(admin, userId, customerId); }
+    catch (err) { console.error('referral reward failed:', err); }
+  }
+
   return true;
+}
+
+/**
+ * Both sides get a discount, never cash — only once the referred user has
+ * actually paid (status === 'active'), never on signup alone.
+ * referral_reward_log's primary key on referred_user_id is the real guard
+ * against granting this twice, including across a replayed webhook.
+ */
+async function grantReferralRewardIfDue(admin, referredUserId, referredCustomerId) {
+  const { data: profile } = await admin.from('profiles')
+    .select('referred_by, referral_rewarded').eq('user_id', referredUserId).maybeSingle();
+  if (!profile?.referred_by || profile.referral_rewarded) return;
+  const referrerId = profile.referred_by;
+
+  // Claim the reward via the log table's primary key before doing anything
+  // Stripe-side — a second concurrent delivery gets a unique-violation here
+  // and simply stops, rather than granting the discount twice.
+  const { error: claimError } = await admin.from('referral_reward_log')
+    .insert({ referred_user_id: referredUserId, referrer_id: referrerId });
+  if (claimError) {
+    if (claimError.code !== '23505') console.error('referral claim failed:', claimError);
+    return; // already granted (or in flight) — either way, do nothing more
+  }
+
+  await admin.from('profiles').update({ referral_rewarded: true }).eq('user_id', referredUserId);
+
+  const coupon = referralCouponId();
+  if (!coupon) { console.error('referral reward skipped: STRIPE_REFERRAL_COUPON_ID not set'); return; }
+
+  const referrerCustomerId = await getOrCreateCustomerId(admin, referrerId);
+
+  // A customer-level discount (as opposed to applying it to one specific
+  // subscription) sticks around until it's consumed. That matters for the
+  // referrer, who may not have an active subscription yet — the coupon just
+  // waits on their customer record and applies automatically the moment
+  // they do subscribe. For the referred friend, who just paid for their
+  // first month, it applies to their very next invoice.
+  const apply = (customerId) => stripe().customers.update(customerId, { coupon });
+  await Promise.all([
+    apply(referredCustomerId),
+    referrerCustomerId ? apply(referrerCustomerId) : Promise.resolve(),
+  ]);
+  await admin.from('referral_reward_log').update({ coupon_id: coupon }).eq('referred_user_id', referredUserId);
+}
+
+/** The referrer may never have subscribed themselves — find or create a Stripe customer to hold their credit. */
+async function getOrCreateCustomerId(admin, userId) {
+  const { data: existing } = await admin.from('archive_subscriptions')
+    .select('stripe_customer_id').eq('user_id', userId).maybeSingle();
+  if (existing?.stripe_customer_id) return existing.stripe_customer_id;
+
+  const { data: userRes } = await admin.auth.admin.getUserById(userId);
+  const email = userRes?.user?.email;
+  if (!email) { console.error('referrer has no email on file', userId); return null; }
+
+  const customer = await stripe().customers.create({ email, metadata: { user_id: userId } });
+  if (existing) {
+    // A row already exists (e.g. a past, now-cancelled subscription) — just
+    // attach the customer id, and leave their real status alone.
+    await admin.from('archive_subscriptions').update({ stripe_customer_id: customer.id }).eq('user_id', userId);
+  } else {
+    // Brand new row for someone who has never subscribed. status is NOT NULL
+    // with no default, so it needs a real value — 'none' on purpose: this
+    // alone must never grant archive access (has_archive_access() only
+    // trusts status in ('active','trialing')), it just holds the credit
+    // until they subscribe for real.
+    await admin.from('archive_subscriptions').insert({
+      user_id: userId, stripe_customer_id: customer.id, status: 'none',
+    });
+  }
+  return customer.id;
 }
