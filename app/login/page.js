@@ -174,7 +174,7 @@ function LoginInner() {
 
         <div className="auth__body">
           <h1 className="auth__headline">Study less.<br />Remember more.</h1>
-          <p className="auth__pitch">Turn your lecture notes into flashcards and quizzes built on active recall.</p>
+          <p className="auth__pitch">Turn your lecture notes into flashcards and quizzes that make studying actually stick.</p>
           <div className="auth__luna">
             <div className="auth__glow" aria-hidden="true" />
             <Mascot mood={isSignup ? 'excited' : 'happy'} size={190} float />

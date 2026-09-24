@@ -197,7 +197,8 @@ export default function StatsPage() {
         </div>
         <div className="card stat stat--icon">
           <span className="stat__ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m8.5 12.5 2.5 2.5 4.5-5"/></svg></span>
-          <div className="stat__n">{known}</div><div className="stat__l">Cards known</div>
+          <div className="stat__n">{known}</div>
+          <div className="stat__l" title="Cards you've gone a week or more between reviews on, without needing to relearn them">Cards known</div>
         </div>
         <div className="card stat stat--icon">
           <span className="stat__ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg></span>

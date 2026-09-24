@@ -6,13 +6,14 @@ import { supabase } from '@/lib/supabaseClient';
 
 // Cmd/Ctrl+K quick nav + "?" shortcuts help. Global, mounted once in layout.
 const NAV = [
-  ['My decks', '/decks', 'D'],
-  ['New study set', '/upload', 'N'],
-  ['Mock exam', '/exam', 'E'],
-  ['Discover', '/discover', null],
-  ['Campus Archive', '/archive', null],
-  ['Syllabus & reminders', '/syllabus', null],
-  ['Progress', '/stats', 'P'],
+  ['My decks', '/decks'],
+  ['Calendar', '/calendar'],
+  ['New study set', '/upload'],
+  ['Mock exam', '/exam'],
+  ['Discover', '/discover'],
+  ['Campus Archive', '/archive'],
+  ['Syllabus & reminders', '/syllabus'],
+  ['Progress', '/stats'],
 ];
 
 const SHORTCUTS = [
@@ -66,10 +67,9 @@ export default function CommandBar() {
                    onKeyDown={(e) => e.key === 'Enter' && results[0] && go(results[0][1])} />
             <div className="cmd__list">
               {results.length === 0 && <div className="cmd__empty">No matches</div>}
-              {results.map(([label, href, key]) => (
+              {results.map(([label, href]) => (
                 <button key={href} className="cmd__item" onClick={() => go(href)}>
                   <span>{label}</span>
-                  {key && <span className="kbd">{key}</span>}
                 </button>
               ))}
             </div>

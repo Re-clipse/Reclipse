@@ -13,7 +13,7 @@ export default function LoadError({ onRetry, message }) {
         </svg>
       </div>
       <h3>Couldn&apos;t load this</h3>
-      <p>{message || 'Something went wrong. This is usually a connection hiccup.'}</p>
+      <p>{message || 'Something went wrong loading this page. Please try again.'}</p>
       <button className="btn btn--primary" onClick={onRetry}>Try again</button>
     </div>
   );

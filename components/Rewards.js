@@ -15,7 +15,7 @@ export function LevelCard({ level, pct, into, span, xp }) {
           <span>{into} / {span} XP</span>
         </div>
         <div className="xp-track"><div className="xp-fill" style={{ width: `${pct}%` }} /></div>
-        <p className="small muted" style={{ marginTop: 'var(--s-2)' }}>{xp.toLocaleString()} XP earned all-time</p>
+        <p className="small muted" style={{ marginTop: 'var(--s-2)' }}>{xp.toLocaleString()} XP earned</p>
       </div>
     </div>
   );

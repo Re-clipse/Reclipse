@@ -19,7 +19,7 @@ export default function DiscoverPage() {
         p_course: course?.trim() || null,
         p_limit: 30,
       }), 12000, 'discover');
-      if (error) { setError("Couldn't load popular decks right now."); setDecks([]); return; }
+      if (error) { setError("Couldn't load popular decks. This is usually a connection hiccup."); setDecks([]); return; }
       setDecks(data || []);
     } catch {
       setError("Couldn't load popular decks. This is usually a connection hiccup.");
@@ -34,7 +34,7 @@ export default function DiscoverPage() {
       <div className="page__head">
         <div>
           <h1>Campus popular</h1>
-          <p>The most-studied shared decks across every Reclipse user. Anonymous, no login needed to browse.</p>
+          <p>The most-studied shared decks across every Reclipse user. Browsing is anonymous — no login needed, and we don&apos;t show who shared what.</p>
         </div>
       </div>
 

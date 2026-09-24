@@ -142,8 +142,11 @@ function StudyInner() {
   if (status === 'empty') {
     return <main className="page"><div className="empty">
       <h3>{dueOnly ? 'Nothing due right now' : 'This deck has no cards'}</h3>
-      <p>{dueOnly ? 'Come back later, or study a deck directly.' : 'Add cards or generate a new set.'}</p>
-      <a href="/decks" className="btn btn--primary">My decks</a></div></main>;
+      <p>{dueOnly ? 'Come back later, or study a deck directly.' : 'Add cards to this deck, or generate a new set.'}</p>
+      {!dueOnly && deckId
+        ? <a href={`/deck/${deckId}`} className="btn btn--primary">Add cards</a>
+        : <a href="/decks" className="btn btn--primary">My decks</a>}
+    </div></main>;
   }
 
   if (queue.length === 0) {
@@ -157,7 +160,7 @@ function StudyInner() {
           <h1 style={{ fontSize: 'var(--text-2xl)' }}>Session complete</h1>
           <p className="muted" style={{ marginTop: 'var(--s-3)' }}>
             {total} card{total === 1 ? '' : 's'} in about {mins} minute{mins === 1 ? '' : 's'}.
-            {again > 0 ? ` ${again} needed a second look, so they'll come back sooner.` : ' Clean run.'}
+            {again > 0 ? ` ${again} needed a second look, so they'll show up again in your reviews sooner than the rest.` : ' Clean run.'}
           </p>
           <p style={{ marginTop: 'var(--s-3)', fontWeight: 600, color: 'var(--violet-700)' }}>
             {encourage('sessionDone', total + again)}
@@ -210,15 +213,18 @@ function StudyInner() {
       </div>
 
       {revealed ? (
-        <div className="grade animate-in">
-          {RATINGS.map((r, i) => (
-            <button key={r.v} className={`btn grade__btn ${r.cls}`} onClick={() => grade(r.v)}>
-              <span className="grade__label">{r.label}</span>
-              <span className="grade__meta">
-                {previews[i]} <span className="kbd" aria-hidden="true">{r.v + 1}</span>
-              </span>
-            </button>
-          ))}
+        <div className="animate-in">
+          <p className="small muted grade__prompt">How well did you know it?</p>
+          <div className="grade">
+            {RATINGS.map((r, i) => (
+              <button key={r.v} className={`btn grade__btn ${r.cls}`} onClick={() => grade(r.v)}>
+                <span className="grade__label">{r.label}</span>
+                <span className="grade__meta">
+                  {previews[i]} <span className="kbd" aria-hidden="true">{r.v + 1}</span>
+                </span>
+              </button>
+            ))}
+          </div>
         </div>
       ) : (
         <button className="btn btn--primary btn--block btn--lg" onClick={() => { setRevealed(true); play('flip'); }}>

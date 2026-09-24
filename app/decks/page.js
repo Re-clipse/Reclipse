@@ -223,11 +223,15 @@ export default function DecksPage() {
               <Mascot mood="happy" size={96} float />
             </div>
             <h3>No study sets yet</h3>
-            <p>Upload a PDF, a photo of your notes, or paste text. We&apos;ll build the cards.</p>
+            <p>Turn your first set of notes into flashcards and a quiz — it only takes a minute.</p>
             <a href="/upload" className="btn btn--primary btn--lg">Create your first set</a>
           </div>
         ) : (
-          <div className="empty"><h3>No decks match</h3><p>Try a different search or filter.</p></div>
+          <div className="empty">
+            <h3>No decks match</h3>
+            <p>Try a different search or filter.</p>
+            <button className="btn btn--ghost" onClick={() => { setQ(''); setCourseFilter('all'); }}>Clear filters</button>
+          </div>
         )
       ) : (
         <div className="deck-grid">
@@ -270,7 +274,10 @@ export default function DecksPage() {
                   <span>{cards} card{cards === 1 ? '' : 's'}</span>
                   <span>·</span>
                   <span>{quiz} quiz</span>
-                  {d.is_public && <span className="badge badge--accent" style={{ marginLeft: 'auto' }}>Shared</span>}
+                  {d.is_public && (
+                    <span className="badge badge--accent" style={{ marginLeft: 'auto' }}
+                          title="Anyone with the link can view this deck">Shared</span>
+                  )}
                 </div>
                 <a href={`/study?deck=${d.id}`} className={`btn btn--block ${caughtUp ? 'btn--ghost' : 'btn--primary'}`}>
                   {caughtUp ? 'Practice' : 'Study'}

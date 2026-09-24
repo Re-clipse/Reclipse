@@ -7,16 +7,18 @@ import { supabase } from '@/lib/supabaseClient';
 export default function JoinCollabPage() {
   const { collabId } = useParams();
   const router = useRouter();
-  const [status, setStatus] = useState('checking');
+  const [status, setStatus] = useState('checking'); // checking | redirecting | joining | error
   const [error, setError] = useState('');
 
   useEffect(() => {
     (async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
+        setStatus('redirecting');
         router.replace(`/login?next=${encodeURIComponent(`/collab/${collabId}`)}`);
         return;
       }
+      setStatus('joining');
       try {
         const res = await fetch('/api/join-collab', {
           method: 'POST',
@@ -27,7 +29,7 @@ export default function JoinCollabPage() {
         if (!res.ok) { setError(data.error || 'Could not join this deck.'); setStatus('error'); return; }
         router.replace(`/deck/${data.deckId}`);
       } catch {
-        setError('Could not reach the server.'); setStatus('error');
+        setError('Could not reach the server. Check your connection and try again.'); setStatus('error');
       }
     })();
   }, [collabId, router]);
@@ -40,5 +42,17 @@ export default function JoinCollabPage() {
       </div></main>
     );
   }
-  return <main className="page page--narrow"><div className="skeleton" style={{ height: 200 }} /></main>;
+
+  const message = status === 'redirecting'
+    ? 'You need a free Reclipse account to join this shared deck. Taking you to log in…'
+    : 'Joining this shared deck — you’ll be able to view and edit its flashcards…';
+
+  return (
+    <main className="page page--narrow">
+      <div className="card" style={{ textAlign: 'center', padding: 'var(--s-6)' }}>
+        <div className="skeleton" style={{ height: 120, marginBottom: 'var(--s-4)' }} />
+        <p className="muted">{message}</p>
+      </div>
+    </main>
+  );
 }

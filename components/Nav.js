@@ -8,6 +8,7 @@ import { soundEnabled, setSound } from '@/lib/sound';
 const LINKS = [
   ['/decks', 'Decks'],
   ['/calendar', 'Calendar'],
+  ['/syllabus', 'Syllabus'],
   ['/exam', 'Mock exam'],
   ['/discover', 'Discover'],
   ['/archive', 'Archive'],
@@ -94,7 +95,7 @@ export default function Nav() {
                 <a key={href} href={href}
                    className={`nav__link${pathname === href ? ' nav__link--active' : ''}`}>{label}</a>
               ))}
-              <a href="/upload" className="btn btn--primary">+ New set</a>
+              <a href="/upload" className="btn btn--primary">New study set</a>
               <a href="/settings" className="nav__link">Settings</a>
               <button onClick={signOut} className="btn btn--quiet">Sign out</button>
             </span>

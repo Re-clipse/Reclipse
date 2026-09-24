@@ -16,16 +16,11 @@ const CARD = {
 };
 
 const QUIZ = {
-  question: 'Which study method is best supported by cognitive research?',
-  options: [
-    'Highlighting your notes in different colours',
-    'Re-reading the textbook chapter twice',
-    'Testing yourself with active recall',
-    'Copying the lecture slides word-for-word',
-  ],
-  correctIndex: 2,
+  question: 'Which gas do plants mainly absorb from the air for photosynthesis?',
+  options: ['Oxygen', 'Carbon dioxide', 'Nitrogen', 'Hydrogen'],
+  correctIndex: 1,
   explanation:
-    'Actively retrieving an answer from memory (active recall) produces stronger, longer-lasting learning than re-reading, highlighting, or copying.',
+    'Plants pull carbon dioxide in through tiny pores called stomata and combine it with water and sunlight to make glucose, releasing oxygen as a byproduct.',
 };
 
 const KEYS = ['A', 'B', 'C', 'D'];
@@ -51,7 +46,7 @@ export default function DemoPage() {
       <div className="center u-mb-6">
         <span className="badge">Interactive demo</span>
         <h1 style={{ fontSize: 'var(--text-2xl)', marginTop: 'var(--s-3)' }}>
-          {stage === 'card' ? 'Try a flashcard' : stage === 'quiz' ? 'Try a quiz question' : 'That\u2019s the loop'}
+          {stage === 'card' ? 'Try a flashcard' : stage === 'quiz' ? 'Try a quiz question' : 'Nice work'}
         </h1>
         <p className="muted small u-mt-2">
           This is exactly how studying feels in Reclipse. With your own notes, it&apos;s all built from your material.
@@ -138,11 +133,11 @@ export default function DemoPage() {
           </div>
           <h2 className="u-text-2xl">That&apos;s the whole loop</h2>
           <p className="u-mt-3 u-accent-text">
-            In the real app you&apos;d earn XP, level up, and unlock achievements for this.
+            In the real app you&apos;d earn experience points (XP), level up, and unlock achievements for this.
           </p>
           <p className="muted u-mt-2">
-            Flip, recall, quiz, repeat. Except with your own lecture notes, and with
-            spaced repetition deciding what to show you when. Ready to try it for real?
+            Flip, recall, quiz, repeat — with your flashcards timed by spaced repetition, so you
+            review exactly what needs it. Ready to try it for real?
           </p>
           <div className="row actions-sm-stack u-row-center u-mt-6">
             <a href="/login?mode=signup" className="btn btn--primary btn--lg">Get started free</a>

@@ -179,7 +179,7 @@ export default function CalendarPage() {
   return (
     <main className="page">
       <PageHeader accent="indigo" icon={ICONS.calendar} title="Calendar"
-        subtitle="Your exam, quiz and lab dates, plus a spaced study plan leading up to each one."
+        subtitle="Your exam, quiz and lab dates — plus a spaced study plan leading up to each exam and quiz."
         action={
           <button className="btn btn--ghost" onClick={exportCalendar} disabled={isEmpty}>
             Export to calendar
@@ -201,7 +201,7 @@ export default function CalendarPage() {
           onPrev={() => setCursor((c) => new Date(c.getFullYear(), c.getMonth() - 1, 1))}
           onNext={() => setCursor((c) => new Date(c.getFullYear(), c.getMonth() + 1, 1))}
           onToday={() => { const d = new Date(); setCursor(new Date(d.getFullYear(), d.getMonth(), 1)); }} />
-      ) : (
+      ) : isEmpty ? null : (
         <AgendaView itemsByDate={itemsByDate} courseColor={courseColor} onSelect={setSelected} />
       )}
 

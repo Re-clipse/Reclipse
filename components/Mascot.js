@@ -7,8 +7,7 @@ import { useId } from 'react';
  * corona. Inline SVG so it's crisp, themeable, animatable. Now with a wider,
  * more enthusiastic range of expressions and livelier idle motion.
  *
- * moods: happy | excited | celebrate | thinking | wave | sleepy | proud |
- *        love | wow | determined
+ * moods: happy | excited | celebrate | thinking | sleepy
  */
 export default function Mascot({ mood = 'happy', size = 120, float = false, bounce = false, className = '' }) {
   const parts = FACES[mood] || FACES.happy;
@@ -123,28 +122,6 @@ const FACES = {
   happy: { eyes: eyeOpen, mouth: smileSmall, brows: brows(0) },
   excited: { eyes: eyeBig, mouth: smileBig, bigCheeks: true, brows: brows(-3) },
   celebrate: { eyes: eyeHappyArc, mouth: openGrin, sparkles: true, bigCheeks: true, noBlink: true },
-  wow: {
-    brows: brows(-5),
-    eyes: eyeBig,
-    mouth: <ellipse cx="54" cy="68" rx="6" ry="8" fill="#1A1523" fillOpacity="0.6" />,
-    sparkles: true,
-  },
-  proud: {
-    eyes: eyeHappyArc,
-    mouth: smileBig,
-    bigCheeks: true,
-    noBlink: true,
-    extra: <path className="mascot__twinkle" d="M54 2l3.2 7 7.6.8-5.7 5.1 1.7 7.5-6.8-3.9-6.8 3.9 1.7-7.5-5.7-5.1 7.6-.8z" fill="#FACC15" />,
-  },
-  love: {
-    eyes: (
-      <>
-        <path d="M42 48c-4-4-9 0-4 5l4 4 4-4c5-5 0-9-4-5z" fill="#F472B6" />
-        <path d="M66 48c-4-4-9 0-4 5l4 4 4-4c5-5 0-9-4-5z" fill="#F472B6" />
-      </>
-    ),
-    mouth: smileBig, bigCheeks: true, noBlink: true,
-  },
   thinking: {
     eyes: (
       <>
@@ -166,8 +143,6 @@ const FACES = {
     ),
     mouth: <path d="M46 67c3 3 13 3 16 0" stroke="#1A1523" strokeWidth="3.2" strokeLinecap="round" fill="none" />,
   },
-  // No waving arm — 'wave' is just a warm, cheerful greeting face.
-  wave: { eyes: eyeOpen, mouth: smileBig, bigCheeks: true },
   sleepy: {
     eyes: (
       <>

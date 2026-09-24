@@ -519,6 +519,7 @@ button, input, textarea { font: inherit; color: inherit; }
   background: var(--white); font-size: var(--text-xs); font-weight: 600; color: var(--ink-2);
 }
 
+.grade__prompt { text-align: center; margin-bottom: var(--s-2); }
 .grade { display: flex; gap: var(--s-3); }
 .grade .btn { flex: 1; }
 .btn--again { background: var(--white); color: var(--ink-2); border-color: var(--line); }

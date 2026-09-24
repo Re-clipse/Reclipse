@@ -275,8 +275,8 @@ export default function SettingsPage() {
       <div className="card">
         <div style={{ fontWeight: 650, marginBottom: 'var(--s-1)' }}>Exam reminders by course</div>
         <p className="small muted u-mb-4">
-          When on, we email you a couple of days before each saved exam, quiz or lab date.
-          Add dates from the <a href="/syllabus">syllabus page</a>.
+          When on, we email you before each saved exam, quiz or lab date — how many days ahead is set
+          below, under &quot;Reminder emails&quot;. Add dates from the <a href="/syllabus">syllabus page</a>.
         </p>
         {courses.length === 0 ? (
           <p className="small muted">No courses yet.</p>
@@ -298,7 +298,8 @@ export default function SettingsPage() {
       <div className="card u-mt-5">
         <div style={{ fontWeight: 650, marginBottom: 'var(--s-1)' }}>Reminder emails</div>
         <p className="small muted u-mb-4">
-          Controls every email Reclipse sends you. Detected timezone: {timezone}.
+          Controls the reminder emails below (course dates, study sessions, weekly digest) — not
+          account emails like password resets. Detected timezone: {timezone}.
         </p>
         <div className="stack">
           <div className="switch" style={{ paddingBlock: 'var(--s-2)' }}>
@@ -388,8 +389,8 @@ export default function SettingsPage() {
       <div className="card u-mt-5">
         <div style={{ fontWeight: 650, marginBottom: 'var(--s-1)' }}>Refer a friend</div>
         <p className="small muted u-mb-4">
-          Share your code with a friend. Once they sign up, enter it, and subscribe to the
-          Campus Archive, you both get a discount on your next month.
+          Share your code with a friend. They enter it in the referral code field when they sign
+          up — once they subscribe to the Campus Archive, you both get a discount on your next month.
         </p>
         {refCode ? (
           <>
@@ -432,8 +433,9 @@ export default function SettingsPage() {
         <div className="u-fw-650" style={{ color: 'var(--error)' }}>Delete account</div>
         <p className="small muted u-mt-2 u-mb-4">
           Permanently deletes your account and everything tied to it — decks, flashcards, study
-          history, course dates, and your Campus Archive subscription (cancelled automatically).
-          This can&apos;t be undone. See our <a href="/privacy">Privacy Policy</a> for details.
+          history, course dates, and your <a href="/archive">Campus Archive</a> subscription
+          (cancelled automatically). This can&apos;t be undone. See our{' '}
+          <a href="/privacy">Privacy Policy</a> for details.
         </p>
         <div className="field u-mb-4">
           <label className="label" htmlFor="delete-confirm">Type DELETE to confirm</label>

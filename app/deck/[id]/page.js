@@ -214,7 +214,10 @@ export default function DeckPage() {
             <div className="switch">
               <div>
                 <div className="u-fw-650">Share this deck</div>
-                <p className="small muted">Anyone with the link can view and copy it. No login needed.</p>
+                <p className="small muted">
+                  Anyone with the link can view and copy it, no login needed — and it&apos;ll show up in
+                  {' '}<a href="/discover">Campus popular</a> once someone studies it.
+                </p>
               </div>
               <button className={deck.is_public ? 'btn btn--primary' : 'btn btn--ghost'} onClick={toggleShare}>
                 {deck.is_public ? 'Sharing on' : 'Turn on'}
@@ -235,8 +238,8 @@ export default function DeckPage() {
               <div>
                 <div className="u-fw-650">Collaborative editing</div>
                 <p className="small muted">
-                  Anyone with this link can join and add or edit flashcards in this deck.
-                  Good for a study group building a deck together.
+                  Anyone with this link can join and add or edit flashcards in this deck, once they
+                  sign in (a free account). Good for a study group building a deck together.
                 </p>
               </div>
               <button className={deck.collab_enabled ? 'btn btn--primary' : 'btn btn--ghost'} onClick={toggleCollab}>
@@ -266,8 +269,8 @@ export default function DeckPage() {
               <div>
                 <div className="u-fw-650">Share in the Campus Archive</div>
                 <p className="small muted">
-                  Share this deck with future students taking the same course. Campus Archive members
-                  can study it. There&apos;s no price to set, and sharing doesn&apos;t earn payments.
+                  Different from Campus popular above — this lists your deck for paying Campus Archive
+                  members to study. You don&apos;t set a price and don&apos;t get paid for it.
                 </p>
               </div>
               <button className={deck.is_archived ? 'btn btn--primary' : 'btn btn--ghost'} onClick={toggleArchive}>

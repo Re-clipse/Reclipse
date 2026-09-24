@@ -14,6 +14,7 @@ export default function SharedDeckPage() {
   const [status, setStatus] = useState('loading');
   const [copying, setCopying] = useState(false);
   const [error, setError] = useState('');
+  const [signedIn, setSignedIn] = useState(true); // assume signed in until checked, to avoid a flash of the note
 
   useEffect(() => {
     (async () => {
@@ -27,6 +28,7 @@ export default function SharedDeckPage() {
       ]);
       setDeck(d); setCards(c || []); setQuizCount(count || 0); setStatus('ready');
     })();
+    supabase.auth.getSession().then(({ data }) => setSignedIn(!!data.session));
   }, [shareId]);
 
   async function copyToAccount() {
@@ -80,10 +82,13 @@ export default function SharedDeckPage() {
           <h1 className="u-mt-3">{deck.title}</h1>
           <p>{cards.length} flashcards · {quizCount} quiz questions</p>
         </div>
-        <button className="btn btn--primary" onClick={copyToAccount} disabled={copying}>
-          {copying && <span className="spinner" />}
-          {copying ? 'Copying…' : 'Save to my decks'}
-        </button>
+        <div className="stack" style={{ alignItems: 'flex-end', gap: 'var(--s-1)' }}>
+          <button className="btn btn--primary" onClick={copyToAccount} disabled={copying}>
+            {copying && <span className="spinner" />}
+            {copying ? 'Copying…' : 'Save to my decks'}
+          </button>
+          {!signedIn && <span className="small muted">You&apos;ll need a free account</span>}
+        </div>
       </div>
 
       {error && <div className="alert alert--error u-mb-4">{error}</div>}

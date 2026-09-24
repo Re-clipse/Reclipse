@@ -116,7 +116,7 @@ export default function SyllabusPage() {
           <h1 className="u-text-2xl">Dates saved</h1>
           <p className="muted u-mt-3">
             {optIn
-              ? "We'll email you a couple of days before each one to review your decks."
+              ? "You're all set — we'll email you before each one, timed to your reminder setting."
               : 'Reminders are off for this course. You can turn them on anytime from the course settings.'}
           </p>
           {optIn && (
@@ -216,8 +216,8 @@ export default function SyllabusPage() {
                 <div>
                   <div className="u-fw-650">Email me reminders (opt-in)</div>
                   <p className="small muted">
-                    We&apos;ll email {user?.email} a couple of days before each date, suggesting you review your decks.
-                    You can turn this off anytime.
+                    We&apos;ll email {user?.email} a few days before each date (3 by default — adjust it in
+                    Settings), suggesting you review your decks. You can turn this off anytime.
                   </p>
                 </div>
                 <input type="checkbox" checked={optIn} onChange={(e) => setOptIn(e.target.checked)}
