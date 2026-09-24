@@ -7,6 +7,7 @@ import { soundEnabled, setSound } from '@/lib/sound';
 
 const LINKS = [
   ['/decks', 'Decks'],
+  ['/calendar', 'Calendar'],
   ['/exam', 'Mock exam'],
   ['/discover', 'Discover'],
   ['/archive', 'Archive'],

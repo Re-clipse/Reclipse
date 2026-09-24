@@ -22,6 +22,11 @@ export default function SettingsPage() {
   const [refCount, setRefCount] = useState(0);
   const [copiedCode, setCopiedCode] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
+  const [emailsEnabled, setEmailsEnabled] = useState(true);
+  const [remindStudySessions, setRemindStudySessions] = useState(true);
+  const [remindWeeklyDigest, setRemindWeeklyDigest] = useState(true);
+  const [reminderDaysAhead, setReminderDaysAhead] = useState(3);
+  const [timezone, setTimezone] = useState('UTC');
 
   useEffect(() => {
     if (!user) return;
@@ -29,13 +34,33 @@ export default function SettingsPage() {
     (async () => {
       try {
         const [{ data: profile }, { data: cs }, { count }] = await withTimeout(Promise.all([
-          supabase.from('profiles').select('display_name').eq('user_id', user.id).maybeSingle(),
+          supabase.from('profiles')
+            .select('display_name, emails_enabled, remind_study_sessions, remind_weekly_digest, reminder_days_ahead, timezone')
+            .eq('user_id', user.id).maybeSingle(),
           supabase.from('courses').select('*').order('name'),
           supabase.from('referral_reward_log').select('referred_user_id', { count: 'exact', head: true }),
         ]), 12000, 'settings');
         setName(profile?.display_name || '');
         setCourses(cs || []);
         setRefCount(count || 0);
+        setEmailsEnabled(profile?.emails_enabled ?? true);
+        setRemindStudySessions(profile?.remind_study_sessions ?? true);
+        setRemindWeeklyDigest(profile?.remind_weekly_digest ?? true);
+        setReminderDaysAhead(profile?.reminder_days_ahead ?? 3);
+        setTimezone(profile?.timezone || 'UTC');
+
+        // Keep the stored timezone in sync with the browser's own, silently.
+        // Dates in course_events/study_plan_sessions have no timezone of
+        // their own, so this is what "today" and "this Sunday" resolve
+        // against for that student's reminder emails.
+        try {
+          const detected = Intl.DateTimeFormat().resolvedOptions().timeZone;
+          if (detected && detected !== (profile?.timezone || 'UTC')) {
+            await supabase.from('profiles').upsert({ user_id: user.id, timezone: detected }, { onConflict: 'user_id' });
+            setTimezone(detected);
+          }
+        } catch {}
+
         setLoaded(true);
       } catch {
         setFailed(true);
@@ -92,6 +117,34 @@ export default function SettingsPage() {
     toast(!current ? 'Reminders on for this course' : 'Reminders off');
   }
 
+  async function saveEmailPref(patch) {
+    await supabase.from('profiles').upsert({ user_id: user.id, ...patch }, { onConflict: 'user_id' });
+  }
+
+  async function toggleEmailsEnabled() {
+    const next = !emailsEnabled;
+    setEmailsEnabled(next);
+    await saveEmailPref({ emails_enabled: next });
+    toast(next ? 'Reminder emails on' : 'Reminder emails off');
+  }
+  async function toggleStudySessions() {
+    const next = !remindStudySessions;
+    setRemindStudySessions(next);
+    await saveEmailPref({ remind_study_sessions: next });
+    toast(next ? 'Study-session reminders on' : 'Study-session reminders off');
+  }
+  async function toggleWeeklyDigest() {
+    const next = !remindWeeklyDigest;
+    setRemindWeeklyDigest(next);
+    await saveEmailPref({ remind_weekly_digest: next });
+    toast(next ? 'Weekly digest on' : 'Weekly digest off');
+  }
+  async function changeDaysAhead(days) {
+    setReminderDaysAhead(days);
+    await saveEmailPref({ reminder_days_ahead: days });
+    toast('Saved');
+  }
+
   if (failed) return <main className="page"><LoadError onRetry={() => setReload((n) => n + 1)} /></main>;
   if (authLoading || !loaded) return <main className="page"><div className="skeleton" style={{ height: 360 }} /></main>;
 
@@ -131,6 +184,47 @@ export default function SettingsPage() {
             ))}
           </div>
         )}
+      </div>
+
+      <div className="card u-mt-5">
+        <div style={{ fontWeight: 650, marginBottom: 'var(--s-1)' }}>Reminder emails</div>
+        <p className="small muted u-mb-4">
+          Controls every email Reclipse sends you. Detected timezone: {timezone}.
+        </p>
+        <div className="stack">
+          <div className="switch" style={{ paddingBlock: 'var(--s-2)' }}>
+            <div>
+              <div className="u-fw-650">All reminder emails</div>
+              <p className="small muted">Same switch as the unsubscribe link in any reminder email.</p>
+            </div>
+            <button className={emailsEnabled ? 'btn btn--primary' : 'btn btn--ghost'} onClick={toggleEmailsEnabled}>
+              {emailsEnabled ? 'On' : 'Off'}
+            </button>
+          </div>
+          <div className="switch" style={{ paddingBlock: 'var(--s-2)' }}>
+            <span className="u-fw-650">Days ahead of an exam to remind me</span>
+            <select className="input" style={{ width: 100 }} value={reminderDaysAhead} disabled={!emailsEnabled}
+                    onChange={(e) => changeDaysAhead(Number(e.target.value))}>
+              <option value={1}>1 day</option>
+              <option value={3}>3 days</option>
+              <option value={7}>7 days</option>
+            </select>
+          </div>
+          <div className="switch" style={{ paddingBlock: 'var(--s-2)' }}>
+            <span className="u-fw-650">Study-session day reminders</span>
+            <button className={remindStudySessions ? 'btn btn--primary' : 'btn btn--ghost'} disabled={!emailsEnabled}
+                    onClick={toggleStudySessions}>
+              {remindStudySessions ? 'On' : 'Off'}
+            </button>
+          </div>
+          <div className="switch" style={{ paddingBlock: 'var(--s-2)' }}>
+            <span className="u-fw-650">Weekly digest (Sundays)</span>
+            <button className={remindWeeklyDigest ? 'btn btn--primary' : 'btn btn--ghost'} disabled={!emailsEnabled}
+                    onClick={toggleWeeklyDigest}>
+              {remindWeeklyDigest ? 'On' : 'Off'}
+            </button>
+          </div>
+        </div>
       </div>
 
       <div className="card u-mt-5">

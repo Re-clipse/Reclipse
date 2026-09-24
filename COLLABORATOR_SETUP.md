@@ -39,6 +39,7 @@ RESEND_API_KEY=...                  # your own
 STRIPE_SECRET_KEY=...               # your own test key (optional)
 DAILY_GENERATION_LIMIT=5
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
+EMAIL_UNSUBSCRIBE_SECRET=...         # any random string, e.g. `openssl rand -hex 32`
 ```
 
 ## 5. Run it

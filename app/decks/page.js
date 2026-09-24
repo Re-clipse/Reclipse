@@ -11,6 +11,7 @@ import PageHeader, { ICONS, ACCENTS } from '@/components/PageHeader';
 import Modal from '@/components/Modal';
 import LoadError from '@/components/LoadError';
 import { withTimeout } from '@/lib/net';
+import { localIso } from '@/lib/dates';
 
 // Course spine colors cycle through the shared per-page accent palette.
 const ACCENT_CYCLE = ['green', 'blue', 'amber', 'pink', 'teal', 'orange', 'indigo'];
@@ -28,12 +29,15 @@ export default function DecksPage() {
   const [error, setError] = useState('');
   const [newCourse, setNewCourse] = useState('');
   const [showCourse, setShowCourse] = useState(false);
+  const [nextExam, setNextExam] = useState(null);
+  const [todaySessions, setTodaySessions] = useState([]);
 
   const load = useCallback(async () => {
     if (!user) return;
     setError('');
     try {
-      const [decksRes, coursesRes, dueRes, sessRes, progRes] = await withTimeout(Promise.all([
+      const today = localIso();
+      const [decksRes, coursesRes, dueRes, sessRes, progRes, examRes, planRes] = await withTimeout(Promise.all([
         supabase.from('decks')
           .select('id, title, created_at, course_id, is_public, flashcards(count), quiz_questions(count)')
           .order('created_at', { ascending: false }),
@@ -42,12 +46,20 @@ export default function DecksPage() {
           .lte('due_at', new Date().toISOString()),
         supabase.from('study_sessions').select('created_at').order('created_at', { ascending: false }).limit(400),
         supabase.from('card_progress').select('due_at, flashcards(deck_id)').limit(5000),
+        // Today card: soonest upcoming exam/quiz, plus any study sessions planned for today.
+        // Best-effort like the rest of this block — a failure here just hides the card.
+        supabase.from('course_events').select('id, title, event_date, event_type, courses(name)')
+          .in('event_type', ['exam', 'quiz']).gte('event_date', today).order('event_date').limit(1),
+        supabase.from('study_plan_sessions').select('id, tip, course_events(title), decks(title)')
+          .eq('status', 'pending').eq('session_date', today),
       ]), 12000, 'decks');
 
       if (decksRes.error) { setError("We couldn't load your decks."); setDecks([]); return; }
       setDecks(decksRes.data || []);
       setCourses(coursesRes.data || []);
       setDue(dueRes.count || 0);
+      setNextExam(examRes.data?.[0] || null);
+      setTodaySessions(planRes.data || []);
       // Per-deck due / learned counts. Best-effort: a failure here only hides the mastery bars.
       const now = Date.now();
       const perDeck = {};
@@ -139,6 +151,33 @@ export default function DecksPage() {
           {due > 0
             ? <a href="/study?mode=due" className="btn btn--accent hero-strip__cta">Review {due} due</a>
             : goal.met && <p className="small muted hero-strip__note">Daily goal hit. Nice work today.</p>}
+        </div>
+      )}
+
+      {(nextExam || todaySessions.length > 0) && (
+        <div className="card today-card u-mb-5">
+          <div style={{ fontWeight: 650, marginBottom: 'var(--s-2)' }}>Today</div>
+          {todaySessions.map((s) => (
+            <div key={s.id} className="today-card__row">
+              <span className="badge badge--accent">Study plan</span>
+              <div>
+                <div style={{ fontWeight: 600 }}>{s.decks?.title || s.course_events?.title || 'Study session'}</div>
+                {s.tip && <p className="small muted">{s.tip}</p>}
+              </div>
+            </div>
+          ))}
+          {nextExam && (
+            <div className="today-card__row">
+              <span className="badge">{nextExam.event_type === 'exam' ? 'Exam' : 'Quiz'}</span>
+              <div>
+                <div style={{ fontWeight: 600 }}>
+                  {nextExam.title}{nextExam.courses?.name ? ` · ${nextExam.courses.name}` : ''}
+                </div>
+                <p className="small muted">{nextExam.event_date}</p>
+              </div>
+            </div>
+          )}
+          <a href="/calendar" className="btn btn--ghost u-mt-3">Open calendar</a>
         </div>
       )}
 
