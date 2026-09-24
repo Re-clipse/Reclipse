@@ -3,7 +3,10 @@
 // trackers (verified by grepping the whole app for document.cookie and
 // third-party script tags). Re-verify this page if that ever changes.
 
-export const metadata = { title: 'Cookie Policy' };
+export const metadata = {
+  title: 'Cookie Policy',
+  description: 'What Reclipse stores in your browser, and why — we don’t use cookies or tracking.',
+};
 
 export default function CookiesPage() {
   return (

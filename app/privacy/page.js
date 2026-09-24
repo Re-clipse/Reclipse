@@ -4,7 +4,10 @@
 // especially the data-retention and cross-border-transfer sections, before
 // relying on it.
 
-export const metadata = { title: 'Privacy Policy' };
+export const metadata = {
+  title: 'Privacy Policy',
+  description: 'How Reclipse collects, uses, and protects your data.',
+};
 
 export default function PrivacyPage() {
   return (

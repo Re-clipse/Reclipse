@@ -1,7 +1,10 @@
 // Starting draft, not legal advice — have a lawyer review before relying on
 // this, especially the liability/AI-accuracy and governing-law sections.
 
-export const metadata = { title: 'Terms of Service' };
+export const metadata = {
+  title: 'Terms of Service',
+  description: 'The terms that govern using Reclipse.',
+};
 
 export default function TermsPage() {
   return (

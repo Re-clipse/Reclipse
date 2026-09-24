@@ -9,13 +9,54 @@ import CommandBar from '@/components/CommandBar';
 import ReferralCapture from '@/components/ReferralCapture';
 import ConsentNotice from '@/components/ConsentNotice';
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://reclipse.ca';
+const TITLE = 'Reclipse: Stop copying the board. Start remembering it.';
+const DESCRIPTION =
+  'Upload your lecture notes and slides. Reclipse turns them into flashcards and quizzes built on active recall, so class time is for listening, not transcribing.';
+
 export const metadata = {
-  title: { default: 'Reclipse: Stop copying the board. Start remembering it.', template: '%s | Reclipse' },
-  description:
-    'Upload your lecture notes and slides. Reclipse turns them into flashcards and quizzes built on active recall, so class time is for listening, not transcribing.',
+  metadataBase: new URL(SITE_URL),
+  title: { default: TITLE, template: '%s | Reclipse' },
+  description: DESCRIPTION,
   manifest: '/manifest.json',
   icons: { icon: '/icon.svg', apple: '/icon.svg' },
   appleWebApp: { capable: true, title: 'Reclipse', statusBarStyle: 'default' },
+  openGraph: {
+    type: 'website',
+    siteName: 'Reclipse',
+    title: TITLE,
+    description: DESCRIPTION,
+    url: SITE_URL,
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: TITLE,
+    description: DESCRIPTION,
+  },
+};
+
+// Organization + SoftwareApplication so search engines and AI answer
+// engines can confidently identify what Reclipse is and that the core
+// product is free, without relying on inference from body copy alone.
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': 'Organization',
+      name: 'Reclipse',
+      url: SITE_URL,
+      logo: `${SITE_URL}/icon.svg`,
+    },
+    {
+      '@type': 'SoftwareApplication',
+      name: 'Reclipse',
+      applicationCategory: 'EducationalApplication',
+      operatingSystem: 'Web',
+      description: DESCRIPTION,
+      offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+      url: SITE_URL,
+    },
+  ],
 };
 
 export const viewport = {
@@ -45,6 +86,7 @@ export default function RootLayout({ children }) {
     <html lang="en">
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       </head>
       <body className={inter.className}>
         <CelebrateProvider>

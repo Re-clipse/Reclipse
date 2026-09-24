@@ -3,7 +3,10 @@
 // (standard "cancel anytime, no partial refunds" SaaS policy) is what you
 // actually want before treating this as final.
 
-export const metadata = { title: 'Refund Policy' };
+export const metadata = {
+  title: 'Refund Policy',
+  description: 'Reclipse’s refund policy for Campus Archive subscriptions.',
+};
 
 export default function RefundPage() {
   return (
