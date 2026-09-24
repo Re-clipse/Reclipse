@@ -1,23 +1,17 @@
 import crypto from 'crypto';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
-import { signUnsubscribeToken } from '@/lib/emailToken';
+import { SITE_URL, escapeHtml, sendEmail } from '@/lib/email';
 
 // Called on a schedule (see vercel.json) — not by any page in the app. Sends
-// three kinds of email, each with its own "already sent" guard so a daily
+// four kinds of email, each with its own "already sent" guard so a daily
 // cron run never duplicates anything:
 //   1. Exam/quiz/lab/assignment reminders — course_events.reminder_sent_at
 //   2. Study-session-day reminders        — study_plan_sessions.reminder_sent_at
 //   3. Weekly digest (Sundays)            — profiles.last_digest_sent_at
+//   4. Streak-loss warning                — profiles.last_streak_warning_sent_at
 // Uses the admin client deliberately: a cron job isn't "someone", so RLS
 // can't be the authorization boundary — the WHERE clauses (and the per-user
 // email prefs below) are.
-// reclipsed.netlify.app is a separate marketing page, deliberately left out of
-// sync with the app (see REDESIGN_LOG.md) — never a safe fallback for links
-// inside a reminder email. Falling back to the same localhost default
-// .env.example uses means a missing env var breaks obviously in dev instead
-// of silently sending students to the wrong site in production.
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
-const FROM = 'Reclipse <onboarding@resend.dev>';
 const TYPE_LABEL = { exam: 'Exam', quiz: 'Quiz', lab: 'Lab', assignment: 'Assignment', other: 'Date' };
 
 const DEFAULT_PROFILE = {
@@ -27,6 +21,7 @@ const DEFAULT_PROFILE = {
   remind_weekly_digest: true,
   emails_enabled: true,
   last_digest_sent_at: null,
+  last_streak_warning_sent_at: null,
 };
 
 export async function GET(request) {
@@ -49,9 +44,14 @@ export async function GET(request) {
 
   const examSent = await sendExamReminders(admin, profileFor);
   const sessionSent = await sendStudySessionReminders(admin, profileFor);
-  const digestSent = await sendWeeklyDigests(admin, profiles);
+  const streakDates = await fetchRecentSessionDates(admin);
+  const digestSent = await sendWeeklyDigests(admin, profiles, streakDates);
+  const streakSent = await sendStreakLossWarnings(admin, profiles, streakDates);
 
-  return Response.json({ examReminders: examSent, studySessionReminders: sessionSent, weeklyDigests: digestSent });
+  return Response.json({
+    examReminders: examSent, studySessionReminders: sessionSent,
+    weeklyDigests: digestSent, streakWarnings: streakSent,
+  });
 }
 
 // ---------- 1. Exam/quiz/lab/assignment reminders ----------
@@ -162,8 +162,40 @@ async function sendStudySessionReminders(admin, profileFor) {
   return sent;
 }
 
+// ---------- shared: recent study_sessions dates, for streak content ----------
+// A plain per-user Set of "days studied" (last 60 days is enough for any
+// streak a warning or digest line would realistically mention) computed once
+// and shared by the digest and the streak-loss warning below, rather than
+// two separate full-table scans.
+async function fetchRecentSessionDates(admin) {
+  const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 60);
+  const { data: sessions } = await admin
+    .from('study_sessions')
+    .select('user_id, created_at')
+    .gte('created_at', cutoff.toISOString());
+
+  const byUser = new Map();
+  for (const s of sessions || []) {
+    if (!byUser.has(s.user_id)) byUser.set(s.user_id, new Set());
+    byUser.get(s.user_id).add(new Date(s.created_at).toISOString().slice(0, 10));
+  }
+  return byUser;
+}
+
+// Consecutive days studied ending at (and including) dateStr, going backward.
+function streakEndingAt(days, dateStr) {
+  if (!days?.has(dateStr)) return 0;
+  let streak = 0;
+  const cursor = new Date(`${dateStr}T00:00:00Z`);
+  while (days.has(cursor.toISOString().slice(0, 10))) {
+    streak += 1;
+    cursor.setUTCDate(cursor.getUTCDate() - 1);
+  }
+  return streak;
+}
+
 // ---------- 3. Weekly digest (Sundays, per the student's own timezone) ----------
-async function sendWeeklyDigests(admin, profiles) {
+async function sendWeeklyDigests(admin, profiles, streakDates) {
   const weekAhead = new Date(); weekAhead.setDate(weekAhead.getDate() + 7);
   const todayIso = new Date().toISOString().slice(0, 10);
 
@@ -192,7 +224,7 @@ async function sendWeeklyDigests(admin, profiles) {
     const profile = profiles.get(userId) || DEFAULT_PROFILE;
     if (!profile.emails_enabled || !profile.remind_weekly_digest) continue;
 
-    const { weekday } = localToday(profile.timezone);
+    const { date: localDate, weekday } = localToday(profile.timezone);
     if (weekday !== 'Sun') continue;
     if (profile.last_digest_sent_at) {
       const sinceLast = Date.now() - new Date(profile.last_digest_sent_at).getTime();
@@ -208,6 +240,11 @@ async function sendWeeklyDigests(admin, profiles) {
     const email = await getEmail(admin, userId);
     if (!email) continue;
 
+    // Streak is a bonus line, not a reason to send or skip the digest — it
+    // only ever adds to a digest already going out for real upcoming dates.
+    const streak = streakEndingAt(streakDates.get(userId), localDate)
+      || streakEndingAt(streakDates.get(userId), shiftDate(localDate, -1));
+
     const eventsHtml = events.map((e) =>
       `<li><strong>${escapeHtml(e.title)}</strong> (${escapeHtml(TYPE_LABEL[e.event_type] || e.event_type)}${e.courses?.name ? `, ${escapeHtml(e.courses.name)}` : ''}) — ${e.event_date}</li>`
     ).join('');
@@ -218,6 +255,7 @@ async function sendWeeklyDigests(admin, profiles) {
     const ok = await sendEmail(userId, email, {
       subject: 'Your week ahead on Reclipse',
       html: `
+        ${streak >= 2 ? `<p>You're on a <strong>${streak}-day study streak</strong>. Keep it up this week.</p>` : ''}
         <p>Here's what's coming up this week:</p>
         ${events.length ? `<p><strong>Deadlines</strong></p><ul>${eventsHtml}</ul>` : ''}
         ${sessions.length ? `<p><strong>Planned study sessions</strong></p><ul>${sessionsHtml}</ul>` : ''}
@@ -235,29 +273,80 @@ async function sendWeeklyDigests(admin, profiles) {
   return sent;
 }
 
-// ---------- shared helpers ----------
-// Course/event/deck titles are student-editable text (syllabus AI extraction,
-// or typed directly via the calendar's edit modal) that lands straight into
-// an HTML email body below. Nothing else in this codebase renders raw HTML
-// from user input, but a template literal like this has no equivalent to
-// React's automatic escaping, so it needs its own.
-function escapeHtml(str) {
-  return String(str ?? '').replace(/[&<>"']/g, (c) => ({
-    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
-  }[c]));
+// ---------- 4. Streak-loss warning ----------
+// Fires only for a student whose streak is already at least 2 days, who
+// hasn't studied yet today, and for whom it's currently evening in their own
+// timezone — this cron runs once a day (see vercel.json), so in practice
+// that window only lands for students whose timezone puts evening around the
+// cron's fixed UTC run time; students elsewhere simply won't get this email
+// under the current single daily run.
+async function sendStreakLossWarnings(admin, profiles, streakDates) {
+  let sent = 0;
+  for (const [userId, days] of streakDates) {
+    const profile = profiles.get(userId) || DEFAULT_PROFILE;
+    if (!profile.emails_enabled || !profile.remind_study_sessions) continue;
+
+    const { date: localDate, hour } = localToday(profile.timezone);
+    if (hour < 18 || hour > 22) continue; // only during the student's evening
+    if (days.has(localDate)) continue; // already studied today — streak safe
+
+    const streak = streakEndingAt(days, shiftDate(localDate, -1));
+    if (streak < 2) continue; // no real streak at risk yet
+
+    if (profile.last_streak_warning_sent_at) {
+      const sinceLast = Date.now() - new Date(profile.last_streak_warning_sent_at).getTime();
+      if (sinceLast < 20 * 3600000) continue; // already warned today
+    }
+
+    const email = await getEmail(admin, userId);
+    if (!email) continue;
+
+    const ok = await sendEmail(userId, email, {
+      subject: `Your ${streak}-day streak breaks tonight`,
+      html: `
+        <p>You've studied ${streak} days in a row on Reclipse.</p>
+        <p>You haven't logged a session yet today — review a few cards before the day ends to keep it going.</p>
+        <p><a href="${SITE_URL}/decks">Study now</a></p>
+      `,
+    });
+    if (ok) {
+      await admin.from('profiles').upsert(
+        { user_id: userId, last_streak_warning_sent_at: new Date().toISOString() },
+        { onConflict: 'user_id' }
+      );
+      sent += 1;
+    }
+  }
+  return sent;
 }
 
+// ---------- shared helpers ----------
 function localToday(timeZone) {
   try {
     const parts = new Intl.DateTimeFormat('en-US', {
       timeZone, year: 'numeric', month: '2-digit', day: '2-digit', weekday: 'short',
+      hour: 'numeric', hourCycle: 'h23',
     }).formatToParts(new Date());
     const get = (t) => parts.find((p) => p.type === t)?.value;
-    return { date: `${get('year')}-${get('month')}-${get('day')}`, weekday: get('weekday') };
+    return {
+      date: `${get('year')}-${get('month')}-${get('day')}`,
+      weekday: get('weekday'),
+      hour: Number(get('hour')),
+    };
   } catch {
     const d = new Date();
-    return { date: d.toISOString().slice(0, 10), weekday: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d.getUTCDay()] };
+    return {
+      date: d.toISOString().slice(0, 10),
+      weekday: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d.getUTCDay()],
+      hour: d.getUTCHours(),
+    };
   }
+}
+
+function shiftDate(dateStr, deltaDays) {
+  const d = new Date(`${dateStr}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + deltaDays);
+  return d.toISOString().slice(0, 10);
 }
 
 const emailCache = new Map();
@@ -267,28 +356,4 @@ async function getEmail(admin, userId) {
   const email = data?.user?.email || null;
   emailCache.set(userId, email);
   return email;
-}
-
-async function sendEmail(userId, to, { subject, html }) {
-  const unsubscribeUrl = `${SITE_URL}/api/unsubscribe?token=${signUnsubscribeToken(userId)}`;
-  try {
-    const res = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        from: FROM,
-        to,
-        subject,
-        html: `
-          ${html}
-          <p style="color:#888;font-size:12px;margin-top:24px;">
-            <a href="${unsubscribeUrl}" style="color:#888;">Unsubscribe from these emails</a>
-          </p>
-        `,
-      }),
-    });
-    return res.ok;
-  } catch {
-    return false;
-  }
 }

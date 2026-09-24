@@ -5,6 +5,8 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { hasArchiveAccess, startArchiveCheckout, getArchivePrice, formatArchivePrice } from '@/lib/archive';
+import { getReferralCode } from '@/lib/referral';
+import ReferralPrompt from '@/components/ReferralPrompt';
 
 function ArchiveDeckInner() {
   const { id } = useParams();
@@ -18,6 +20,7 @@ function ArchiveDeckInner() {
   const [subscribing, setSubscribing] = useState(false);
   const [error, setError] = useState('');
   const [price, setPrice] = useState(null);
+  const [referral, setReferral] = useState(null);
 
   const load = useCallback(async () => {
     // Preview is a capped RPC — never the full deck. Safe for logged-out users.
@@ -45,6 +48,9 @@ function ArchiveDeckInner() {
 
   useEffect(() => { load(); }, [load]);
   useEffect(() => { getArchivePrice().then(setPrice); }, []);
+  useEffect(() => {
+    if (justSubscribed && access) getReferralCode().then(setReferral);
+  }, [justSubscribed, access]);
 
   // Stripe's webhook may land a moment after the success redirect, so re-check
   // briefly rather than telling a paying user they don't have access yet.
@@ -119,6 +125,12 @@ function ArchiveDeckInner() {
           </>
         )}
       </div>
+
+      {justSubscribed && access && (
+        <ReferralPrompt code={referral?.code} link={referral?.link}
+          title="Know someone who'd want this too?"
+          note="Share your link — every friend who signs up raises your monthly AI-generation limit by 5, and if they subscribe too, you both get a discount on your next month." />
+      )}
 
       {preview.samples.length > 0 && (
         <div className="u-mt-6">

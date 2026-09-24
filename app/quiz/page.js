@@ -10,6 +10,8 @@ import Mascot from '@/components/Mascot';
 import { useCelebrate } from '@/components/Celebrate';
 import { encourage } from '@/lib/encourage';
 import { play } from '@/lib/sound';
+import { getReferralCode } from '@/lib/referral';
+import ReferralPrompt from '@/components/ReferralPrompt';
 
 const KEYS = ['A', 'B', 'C', 'D', 'E', 'F'];
 
@@ -28,6 +30,7 @@ function QuizInner() {
   const [picked, setPicked] = useState(null);
   const [correct, setCorrect] = useState(0);
   const [wrong, setWrong] = useState([]);
+  const [referral, setReferral] = useState(null);
   const startedAt = useRef(Date.now());
   const logged = useRef(false);
 
@@ -102,6 +105,25 @@ function QuizInner() {
     if (pctNow >= 70) { play('complete'); const t = setTimeout(() => cannon(), 250); return () => clearTimeout(t); } // quiz-celebrate
   }, [finished, correct, questions.length, cannon]);
 
+  // The onboarding tutorial quiz is a student's first real "aha" moment —
+  // they just built and cleared their first deck — but until now nothing
+  // celebrated it; the XP/achievement pop only ever ran on /stats, a page
+  // a brand-new user has no reason to have visited yet.
+  const [onboardingReward, setOnboardingReward] = useState(null);
+  useEffect(() => {
+    if (!finished || !onboarding) return;
+    setOnboardingReward({ kind: 'Achievement unlocked', msg: 'First steps + Warm-up' });
+    play('achieve');
+    const t = setTimeout(() => cannon(), 200);
+    const clear = setTimeout(() => setOnboardingReward(null), 4200);
+    return () => { clearTimeout(t); clearTimeout(clear); };
+  }, [finished, onboarding, cannon]);
+
+  useEffect(() => {
+    if (!finished || !onboarding) return;
+    getReferralCode().then(setReferral);
+  }, [finished, onboarding]);
+
   if (authLoading || status === 'loading') {
     return <main className="page"><div className="skeleton" style={{ height: 360 }} /></main>;
   }
@@ -124,6 +146,15 @@ function QuizInner() {
     if (onboarding) {
       return (
         <main className="page page--narrow">
+          {onboardingReward && (
+            <div className="reward-pop">
+              <Mascot mood="excited" size={56} bounce />
+              <div>
+                <div className="reward-pop__t">{onboardingReward.kind}</div>
+                <div className="reward-pop__m">{onboardingReward.msg}</div>
+              </div>
+            </div>
+          )}
           <div className="progress u-mb-6"><div className="progress__bar" style={{ width: '100%' }} /></div>
           <div className="card center animate-in u-p-7">
             <div className="mascot-wrap">
@@ -139,6 +170,10 @@ function QuizInner() {
               <a href="/decks" className="btn btn--primary btn--lg">Go to my decks</a>
             </div>
           </div>
+
+          <ReferralPrompt code={referral?.code} link={referral?.link}
+            title="Studying with classmates? Invite them"
+            note="Share your link — every friend who signs up raises your monthly AI-generation limit by 5, and if they later subscribe to Campus Archive, you both also get a discount." />
         </main>
       );
     }

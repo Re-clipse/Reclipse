@@ -39,6 +39,7 @@ export default function DeckPage() {
   const [addingQuiz, setAddingQuiz] = useState(false);
   const [sessions, setSessions] = useState([]);
   const [historyLoaded, setHistoryLoaded] = useState(false);
+  const [showInvite, setShowInvite] = useState(false);
 
   const load = useCallback(async () => {
     if (!user) return;
@@ -52,6 +53,19 @@ export default function DeckPage() {
       if (!d.data) { setStatus('missing'); return; }
       setDeck(d.data); setCards(c.data || []); setQuizCount(q.count || 0);
       setCourses(co.data || []); setStatus('ready');
+
+      // The invite prompt is a one-time nudge on a student's very first deck —
+      // once they have a second deck, or have already turned on collaboration
+      // or dismissed the prompt, it never has a reason to show again.
+      if (!d.data.collab_enabled) {
+        let dismissed = false;
+        try { dismissed = localStorage.getItem('reclipse-invite-dismissed') === '1'; } catch {}
+        if (!dismissed) {
+          const { count: deckCount } = await supabase.from('decks')
+            .select('id', { count: 'exact', head: true }).eq('user_id', user.id).is('deleted_at', null);
+          setShowInvite(deckCount === 1);
+        }
+      }
     } catch {
       setStatus('failed');
       return;
@@ -142,6 +156,20 @@ export default function DeckPage() {
     await supabase.from('decks').update({ collab_enabled: enabled, collab_id }).eq('id', id);
     setDeck((d) => ({ ...d, collab_enabled: enabled, collab_id }));
     toast(enabled ? 'Collaboration turned on' : 'Collaboration turned off');
+    return { enabled, collab_id };
+  }
+
+  async function quickInvite() {
+    const { collab_id } = await toggleCollab();
+    const link = `${window.location.origin}/collab/${collab_id}`;
+    try { await navigator.clipboard?.writeText(link); } catch {}
+    toast('Invite link copied — send it to your classmates', 'success');
+    dismissInvite();
+  }
+
+  function dismissInvite() {
+    setShowInvite(false);
+    try { localStorage.setItem('reclipse-invite-dismissed', '1'); } catch {}
   }
 
   async function toggleArchive() {
@@ -225,6 +253,8 @@ export default function DeckPage() {
   }
 
   const shareUrl = deck.share_id ? `${typeof window !== 'undefined' ? window.location.origin : ''}/shared/${deck.share_id}` : '';
+  const courseName = courses.find((c) => c.id === deck.course_id)?.name;
+  const courseCode = courseName ? courseName.split(/\s+[—–-]\s+/)[0] : null;
 
   return (
     <main className="page">
@@ -240,6 +270,21 @@ export default function DeckPage() {
           {quizCount > 0 && <a href={`/quiz?deck=${id}`} className="btn btn--ghost">Quiz</a>}
         </div>
       </div>
+
+      {showInvite && (
+        <div className="card u-mt-4" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--s-4)', flexWrap: 'wrap' }}>
+          <div>
+            <strong>{courseCode ? `Invite your ${courseCode} classmates` : 'Invite classmates to this deck'}</strong>
+            <p className="small muted u-mt-1">
+              Turn on collaboration and share a link — anyone with it can add cards to this deck too.
+            </p>
+          </div>
+          <div className="row">
+            <button className="btn btn--primary" onClick={quickInvite}>Invite classmates</button>
+            <button className="btn btn--quiet" onClick={dismissInvite}>Not now</button>
+          </div>
+        </div>
+      )}
 
       <div className="tabs">
         {[['cards', 'Cards'], ['quiz', 'Quiz'], ['summary', 'Summary'], ['history', 'History'], ['settings', 'Settings']].map(([k, l]) => (

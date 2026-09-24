@@ -21,7 +21,7 @@ export default function WelcomePage() {
     e.preventDefault();
     setError('');
     const name = course.trim();
-    if (!name) { setError('Name a course to continue. You can rename it later.'); return; }
+    if (!name) { router.push('/upload?onboarding=1'); return; }
 
     setSaving(true);
     const { data, error } = await supabase.from('courses').insert({ user_id: user.id, name }).select().single();
@@ -45,13 +45,14 @@ export default function WelcomePage() {
         </p>
         <form onSubmit={next} className="stack">
           <div className="field">
-            <label className="label" htmlFor="course">Course name</label>
+            <label className="label" htmlFor="course">Course name (optional)</label>
             <input id="course" className="input" autoFocus placeholder="e.g. BI110 - Cell Biology"
                    value={course} onChange={(e) => setCourse(e.target.value)} />
           </div>
           {error && <div role="alert" className="alert alert--error">{error}</div>}
           <button className="btn btn--primary btn--block btn--lg" disabled={saving}>
-            {saving && <span className="spinner" />}{saving ? 'Setting up\u2026' : 'Continue'}
+            {saving && <span className="spinner" />}
+            {saving ? 'Setting up\u2026' : course.trim() ? 'Continue' : 'Skip for now'}
           </button>
         </form>
       </div>

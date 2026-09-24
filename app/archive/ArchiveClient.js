@@ -8,6 +8,8 @@ import { withTimeout } from '@/lib/net';
 import Mascot from '@/components/Mascot';
 import LoadError from '@/components/LoadError';
 import { hasArchiveAccess, startArchiveCheckout, openBillingPortal, getArchivePrice, formatArchivePrice } from '@/lib/archive';
+import { getReferralCode } from '@/lib/referral';
+import ReferralPrompt from '@/components/ReferralPrompt';
 
 // "BI110 — Cell Biology" -> { code: 'BI110', name: 'Cell Biology' }
 function splitCourse(label) {
@@ -22,6 +24,8 @@ export default function ArchiveClient() {
   const [member, setMember] = useState(null);
   const [busy, setBusy] = useState(false);
   const [price, setPrice] = useState(null);
+  const [justSubscribed, setJustSubscribed] = useState(false);
+  const [referral, setReferral] = useState(null);
   const router = useRouter();
 
   async function load(query) {
@@ -41,6 +45,14 @@ export default function ArchiveClient() {
   useEffect(() => { load(''); }, []);
   useEffect(() => { hasArchiveAccess().then(setMember).catch(() => setMember(false)); }, []);
   useEffect(() => { getArchivePrice().then(setPrice); }, []);
+  useEffect(() => {
+    if (typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('subscribed') === '1') {
+      setJustSubscribed(true);
+    }
+  }, []);
+  useEffect(() => {
+    if (justSubscribed && member) getReferralCode().then(setReferral);
+  }, [justSubscribed, member]);
 
   async function membershipAction(fn) {
     setError(''); setBusy(true);
@@ -93,6 +105,12 @@ export default function ArchiveClient() {
           You have full Archive access.{' '}
           <button className="linklike" disabled={busy} onClick={() => membershipAction(openBillingPortal)}>Manage membership</button>
         </p>
+      )}
+
+      {justSubscribed && member && (
+        <ReferralPrompt code={referral?.code} link={referral?.link}
+          title="Know someone who'd want this too?"
+          note="Share your link — every friend who signs up raises your monthly AI-generation limit by 5, and if they subscribe too, you both get a discount on your next month." />
       )}
 
       <form className="toolbar" onSubmit={(e) => { e.preventDefault(); load(q); }}>

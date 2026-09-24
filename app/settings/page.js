@@ -20,6 +20,8 @@ export default function SettingsPage() {
   const [reload, setReload] = useState(0);
   const [refCode, setRefCode] = useState(null);
   const [refCount, setRefCount] = useState(0);
+  const [referredCount, setReferredCount] = useState(0);
+  const [bonusGenerations, setBonusGenerations] = useState(0);
   const [copiedCode, setCopiedCode] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
   const [emailsEnabled, setEmailsEnabled] = useState(true);
@@ -47,16 +49,19 @@ export default function SettingsPage() {
     setFailed(false);
     (async () => {
       try {
-        const [{ data: profile }, { data: cs }, { count }] = await withTimeout(Promise.all([
+        const [{ data: profile }, { data: cs }, { count }, { data: refStats }] = await withTimeout(Promise.all([
           supabase.from('profiles')
             .select('display_name, emails_enabled, remind_study_sessions, remind_weekly_digest, reminder_days_ahead, timezone')
             .eq('user_id', user.id).maybeSingle(),
           supabase.from('courses').select('*').order('name'),
           supabase.from('referral_reward_log').select('referred_user_id', { count: 'exact', head: true }),
+          supabase.rpc('referral_stats').maybeSingle(),
         ]), 12000, 'settings');
         setName(profile?.display_name || '');
         setCourses(cs || []);
         setRefCount(count || 0);
+        setReferredCount(refStats?.referred_count || 0);
+        setBonusGenerations(refStats?.bonus_generations || 0);
         setEmailsEnabled(profile?.emails_enabled ?? true);
         setRemindStudySessions(profile?.remind_study_sessions ?? true);
         setRemindWeeklyDigest(profile?.remind_weekly_digest ?? true);
@@ -389,8 +394,9 @@ export default function SettingsPage() {
       <div className="card u-mt-5">
         <div style={{ fontWeight: 650, marginBottom: 'var(--s-1)' }}>Refer a friend</div>
         <p className="small muted u-mb-4">
-          Share your code with a friend. They enter it in the referral code field when they sign
-          up — once they subscribe to the Campus Archive, you both get a discount on your next month.
+          Share your code with a friend. They enter it in the referral code field when they sign up —
+          every friend who signs up permanently raises your monthly AI-generation limit by 5, and if
+          they later subscribe to the Campus Archive, you both also get a discount on your next month.
         </p>
         {refCode ? (
           <>
@@ -412,9 +418,11 @@ export default function SettingsPage() {
         ) : (
           <div className="skeleton" style={{ height: 44 }} />
         )}
-        {refCount > 0 && (
+        {(referredCount > 0 || refCount > 0) && (
           <p className="small muted u-mt-3">
-            {refCount} friend{refCount === 1 ? '' : 's'} rewarded so far.
+            {referredCount} friend{referredCount === 1 ? '' : 's'} signed up with your code
+            {bonusGenerations > 0 && ` (+${bonusGenerations} monthly generations)`}.
+            {refCount > 0 && ` ${refCount} went on to subscribe and earned you a discount.`}
           </p>
         )}
       </div>
