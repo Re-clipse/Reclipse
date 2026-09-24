@@ -36,7 +36,7 @@ export default function WelcomePage() {
       <div className="progress u-mb-6"><div className="progress__bar" style={{ width: '33%' }} /></div>
       <div className="card animate-in u-p-6">
         <div className="mascot-wrap">
-          <Mascot mood="excited" size={130} full float />
+          <Mascot mood="excited" size={108} float />
         </div>
         <span className="badge">Step 1 of 3</span>
         <h1 style={{ fontSize: 'var(--text-2xl)', marginTop: 'var(--s-3)', marginBottom: 'var(--s-2)' }}>Name your first course</h1>

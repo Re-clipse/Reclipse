@@ -175,7 +175,7 @@ export default function ExamPage() {
       <main className="page page--narrow">
         <div className="card center animate-in u-p-7">
           <div className="mascot-wrap">
-            <Mascot mood={pct >= 70 ? 'excited' : 'determined'} size={130} full bounce />
+            <Mascot mood={pct >= 70 ? 'excited' : 'determined'} size={110} bounce />
           </div>
           <p className="muted small">Exam score</p>
           <div className="score">{pct}%</div>

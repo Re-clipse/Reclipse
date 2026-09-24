@@ -8,34 +8,22 @@ import { useId } from 'react';
  * her. Inline SVG so it's crisp, themeable, animatable.
  *
  * moods: happy | excited | celebrate | thinking | determined | sleepy
- *
- * `full`: renders posed arms/legs (a different pose per mood) on a widened
- * canvas, for the handful of big, high-impact moments (hero art, onboarding,
- * session-complete screens) — everywhere else stays the compact bust used in
- * buttons, nav, empty states, and toasts.
  */
-export default function Mascot({ mood = 'happy', size = 120, full = false, float = false, bounce = false, className = '' }) {
+export default function Mascot({ mood = 'happy', size = 120, float = false, bounce = false, className = '' }) {
   const parts = FACES[mood] || FACES.happy;
   // Unique ids so several Lunas on one page never share (or lose) gradients.
   const uid = useId().replace(/:/g, '');
   const id = (n) => `${n}-${uid}`;
   const cls = [
     'mascot',
-    full && 'mascot--full',
     float && 'mascot--float',
     bounce && 'mascot--bounce',
     (mood === 'excited' || mood === 'celebrate' || mood === 'wow') && 'mascot--wiggle',
     className,
   ].filter(Boolean).join(' ');
 
-  // Bust: the comet's own tight 108×108 box. Full body: widened to fit posed
-  // stub arms/legs without moving the comet's own coordinates (still centered
-  // on 54,54) — size keeps controlling width, height follows the box ratio.
-  const viewBox = full ? '-14 -18 134 154' : '0 0 108 108';
-  const height = full ? Math.round(size * (154 / 134)) : size;
-
   return (
-    <svg width={size} height={height} viewBox={viewBox} fill="none" className={cls}
+    <svg width={size} height={size} viewBox="0 0 108 108" fill="none" className={cls}
          role="img" aria-label="Reclipse mascot">
       <defs>
         <radialGradient id={id('corona')} cx="50%" cy="50%" r="50%">
@@ -69,9 +57,6 @@ export default function Mascot({ mood = 'happy', size = 120, full = false, float
       <circle cx="3" cy="82" r="1.8" fill="#FACC15" opacity="0.18" />
       <circle cx="8" cy="72" r="3.2" fill="#FACC15" opacity="0.35" />
       <circle cx="14" cy="62" r="5" fill="#FACC15" opacity="0.55" />
-
-      {/* full-body limbs render behind the comet body so shoulders/hips tuck under it */}
-      {full && BODY_POSES[mood]}
 
       {/* comet body */}
       <path
@@ -233,122 +218,4 @@ const FACES = {
   thinking: { eyes: eyesThinking, mouth: mouthThinking, brows: browsThinking, extra: extraThinking },
   determined: { eyes: eyesDetermined, mouth: mouthDetermined, brows: browsDetermined },
   sleepy: { eyes: eyesSleepy, mouth: mouthSleepy, brows: browsSleepy, noBlink: true, extra: extraSleepy },
-};
-
-// ---------- full-body poses (only rendered when `full` is set) ----------
-
-const LIMB = '#7C3AED';
-const LIMB_SHINE = '#C4B5FD';
-const HAND = '#8B5CF6';
-const HAND_EDGE = '#5B21B6';
-const FOOT = '#6D28D9';
-
-const legsStanding = (
-  <>
-    <path d="M45 82C42 92 41 104 43 116" stroke={LIMB} strokeWidth="15" strokeLinecap="round" fill="none" />
-    <path d="M63 82C66 92 67 104 65 116" stroke={LIMB} strokeWidth="15" strokeLinecap="round" fill="none" />
-    <path d="M45 82C42 92 41 104 43 116" stroke={LIMB_SHINE} strokeWidth="5" strokeLinecap="round" fill="none" opacity="0.35" />
-    <path d="M63 82C66 92 67 104 65 116" stroke={LIMB_SHINE} strokeWidth="5" strokeLinecap="round" fill="none" opacity="0.35" />
-    <ellipse cx="41" cy="120" rx="10" ry="6" fill={FOOT} />
-    <ellipse cx="67" cy="120" rx="10" ry="6" fill={FOOT} />
-  </>
-);
-const legsWide = (
-  <>
-    <path d="M42 82C36 93 33 106 35 118" stroke={LIMB} strokeWidth="15" strokeLinecap="round" fill="none" />
-    <path d="M66 82C72 93 75 106 73 118" stroke={LIMB} strokeWidth="15" strokeLinecap="round" fill="none" />
-    <path d="M42 82C36 93 33 106 35 118" stroke={LIMB_SHINE} strokeWidth="5" strokeLinecap="round" fill="none" opacity="0.35" />
-    <path d="M66 82C72 93 75 106 73 118" stroke={LIMB_SHINE} strokeWidth="5" strokeLinecap="round" fill="none" opacity="0.35" />
-    <ellipse cx="33" cy="122" rx="10" ry="6" fill={FOOT} />
-    <ellipse cx="75" cy="122" rx="10" ry="6" fill={FOOT} />
-  </>
-);
-const legsHop = (
-  <>
-    <path d="M48 82C46 90 45 98 47 104" stroke={LIMB} strokeWidth="15" strokeLinecap="round" fill="none" />
-    <path d="M60 82C62 90 63 98 61 104" stroke={LIMB} strokeWidth="15" strokeLinecap="round" fill="none" />
-    <path d="M48 82C46 90 45 98 47 104" stroke={LIMB_SHINE} strokeWidth="5" strokeLinecap="round" fill="none" opacity="0.35" />
-    <path d="M60 82C62 90 63 98 61 104" stroke={LIMB_SHINE} strokeWidth="5" strokeLinecap="round" fill="none" opacity="0.35" />
-    <ellipse cx="46" cy="108" rx="9" ry="5.5" fill={FOOT} />
-    <ellipse cx="62" cy="108" rx="9" ry="5.5" fill={FOOT} />
-  </>
-);
-const legsBuckled = (
-  <>
-    <path d="M48 82C47 92 49 104 51 114" stroke={LIMB} strokeWidth="14" strokeLinecap="round" fill="none" />
-    <path d="M60 82C61 92 59 104 57 114" stroke={LIMB} strokeWidth="14" strokeLinecap="round" fill="none" />
-    <path d="M48 82C47 92 49 104 51 114" stroke={LIMB_SHINE} strokeWidth="4.5" strokeLinecap="round" fill="none" opacity="0.3" />
-    <path d="M60 82C61 92 59 104 57 114" stroke={LIMB_SHINE} strokeWidth="4.5" strokeLinecap="round" fill="none" opacity="0.3" />
-    <ellipse cx="50" cy="118" rx="9" ry="5.5" fill={FOOT} />
-    <ellipse cx="58" cy="118" rx="9" ry="5.5" fill={FOOT} />
-  </>
-);
-
-const BODY_POSES = {
-  happy: (
-    <>
-      <path d="M63 60C74 54 88 42 92 24" stroke={LIMB} strokeWidth="15" strokeLinecap="round" fill="none" />
-      <path d="M63 60C74 54 88 42 92 24" stroke={LIMB_SHINE} strokeWidth="5" strokeLinecap="round" fill="none" opacity="0.35" />
-      <ellipse cx="95" cy="19" rx="7.5" ry="6.5" fill={HAND} stroke={HAND_EDGE} strokeWidth="1.3" transform="rotate(-20 95 19)" />
-      <path d="M44 62C34 70 29 82 31 92" stroke={LIMB} strokeWidth="15" strokeLinecap="round" fill="none" />
-      <path d="M44 62C34 70 29 82 31 92" stroke={LIMB_SHINE} strokeWidth="5" strokeLinecap="round" fill="none" opacity="0.35" />
-      <ellipse cx="30" cy="96" rx="7" ry="6" fill={HAND} stroke={HAND_EDGE} strokeWidth="1.3" />
-      {legsStanding}
-    </>
-  ),
-  excited: (
-    <>
-      <path d="M64 58C72 42 78 22 82 6" stroke={LIMB} strokeWidth="16" strokeLinecap="round" fill="none" />
-      <path d="M64 58C72 42 78 22 82 6" stroke={LIMB_SHINE} strokeWidth="5.5" strokeLinecap="round" fill="none" opacity="0.35" />
-      <circle cx="84" cy="1" r="8" fill={HAND} stroke={HAND_EDGE} strokeWidth="1.4" />
-      <path d="M43 60C28 56 12 50 0 40" stroke={LIMB} strokeWidth="16" strokeLinecap="round" fill="none" />
-      <path d="M43 60C28 56 12 50 0 40" stroke={LIMB_SHINE} strokeWidth="5.5" strokeLinecap="round" fill="none" opacity="0.35" />
-      <ellipse cx="-4" cy="36" rx="7.5" ry="6.5" fill={HAND} stroke={HAND_EDGE} strokeWidth="1.4" transform="rotate(25 -4 36)" />
-      {legsHop}
-    </>
-  ),
-  celebrate: (
-    <>
-      <path d="M65 58C80 38 92 14 99 -5" stroke={LIMB} strokeWidth="16" strokeLinecap="round" fill="none" />
-      <path d="M65 58C80 38 92 14 99 -5" stroke={LIMB_SHINE} strokeWidth="5.5" strokeLinecap="round" fill="none" opacity="0.35" />
-      <circle cx="100" cy="-9" r="8" fill={HAND} stroke={HAND_EDGE} strokeWidth="1.4" />
-      <path d="M42 58C27 38 15 14 8 -5" stroke={LIMB} strokeWidth="16" strokeLinecap="round" fill="none" />
-      <path d="M42 58C27 38 15 14 8 -5" stroke={LIMB_SHINE} strokeWidth="5.5" strokeLinecap="round" fill="none" opacity="0.35" />
-      <circle cx="7" cy="-9" r="8" fill={HAND} stroke={HAND_EDGE} strokeWidth="1.4" />
-      {legsHop}
-    </>
-  ),
-  thinking: (
-    <>
-      <path d="M64 58C70 66 66 74 58 76" stroke={LIMB} strokeWidth="15" strokeLinecap="round" fill="none" />
-      <path d="M64 58C70 66 66 74 58 76" stroke={LIMB_SHINE} strokeWidth="5" strokeLinecap="round" fill="none" opacity="0.35" />
-      <ellipse cx="56" cy="77" rx="6" ry="5" fill={HAND} stroke={HAND_EDGE} strokeWidth="1.2" />
-      <path d="M44 62C38 70 40 78 50 82" stroke={LIMB} strokeWidth="15" strokeLinecap="round" fill="none" />
-      <path d="M44 62C38 70 40 78 50 82" stroke={LIMB_SHINE} strokeWidth="5" strokeLinecap="round" fill="none" opacity="0.35" />
-      <ellipse cx="52" cy="83" rx="6.5" ry="5.5" fill={HAND} stroke={HAND_EDGE} strokeWidth="1.2" />
-      {legsStanding}
-    </>
-  ),
-  determined: (
-    <>
-      <path d="M66 60C78 62 84 72 78 82" stroke={LIMB} strokeWidth="16" strokeLinecap="round" fill="none" />
-      <path d="M66 60C78 62 84 72 78 82" stroke={LIMB_SHINE} strokeWidth="5.5" strokeLinecap="round" fill="none" opacity="0.35" />
-      <ellipse cx="73" cy="85" rx="7" ry="6" fill={HAND} stroke={HAND_EDGE} strokeWidth="1.4" />
-      <path d="M42 60C30 62 24 72 30 82" stroke={LIMB} strokeWidth="16" strokeLinecap="round" fill="none" />
-      <path d="M42 60C30 62 24 72 30 82" stroke={LIMB_SHINE} strokeWidth="5.5" strokeLinecap="round" fill="none" opacity="0.35" />
-      <ellipse cx="35" cy="85" rx="7" ry="6" fill={HAND} stroke={HAND_EDGE} strokeWidth="1.4" />
-      {legsWide}
-    </>
-  ),
-  sleepy: (
-    <>
-      <path d="M64 60C70 72 72 86 68 98" stroke={LIMB} strokeWidth="14" strokeLinecap="round" fill="none" />
-      <path d="M64 60C70 72 72 86 68 98" stroke={LIMB_SHINE} strokeWidth="4.5" strokeLinecap="round" fill="none" opacity="0.3" />
-      <ellipse cx="67" cy="101" rx="6.5" ry="5.5" fill={HAND} stroke={HAND_EDGE} strokeWidth="1.2" />
-      <path d="M44 60C38 72 36 86 40 98" stroke={LIMB} strokeWidth="14" strokeLinecap="round" fill="none" />
-      <path d="M44 60C38 72 36 86 40 98" stroke={LIMB_SHINE} strokeWidth="4.5" strokeLinecap="round" fill="none" opacity="0.3" />
-      <ellipse cx="41" cy="101" rx="6.5" ry="5.5" fill={HAND} stroke={HAND_EDGE} strokeWidth="1.2" />
-      {legsBuckled}
-    </>
-  ),
 };

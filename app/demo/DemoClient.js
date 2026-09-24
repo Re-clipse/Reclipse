@@ -129,7 +129,7 @@ export default function DemoClient() {
       {stage === 'done' && (
         <div className="card center animate-in u-p-7">
           <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 'var(--s-2)' }}>
-            <Mascot mood="celebrate" size={140} full bounce />
+            <Mascot mood="celebrate" size={120} bounce />
           </div>
           <h2 className="u-text-2xl">That&apos;s the whole loop</h2>
           <p className="u-mt-3 u-accent-text">
