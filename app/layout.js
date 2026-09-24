@@ -6,6 +6,7 @@ import { ToastProvider } from '@/components/Toast';
 import { CelebrateProvider } from '@/components/Celebrate';
 import CommandBar from '@/components/CommandBar';
 import ReferralCapture from '@/components/ReferralCapture';
+import ConsentNotice from '@/components/ConsentNotice';
 
 export const metadata = {
   title: { default: 'Reclipse: Stop copying the board. Start remembering it.', template: '%s | Reclipse' },
@@ -53,8 +54,15 @@ export default function RootLayout({ children }) {
           <Suspense fallback={null}><ReferralCapture /></Suspense>
           {children}
           <footer className="footer">
-            Reclipse, built by students, for students at Wilfrid Laurier.
+            <p>Reclipse, built by students, for students at Wilfrid Laurier.</p>
+            <nav className="footer__links" aria-label="Legal">
+              <a href="/privacy">Privacy</a>
+              <a href="/terms">Terms</a>
+              <a href="/refund">Refunds</a>
+              <a href="/cookies">Cookies</a>
+            </nav>
           </footer>
+          <ConsentNotice />
         </ToastProvider>
         </CelebrateProvider>
       </body>

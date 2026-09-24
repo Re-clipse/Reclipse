@@ -192,7 +192,11 @@ function StudyInner() {
       <div className={`flip flip--stack${revealed ? ' flip--revealed' : ''}`}>
         <div className="flip__stack flip__stack--2" aria-hidden="true" />
         <div className="flip__stack flip__stack--1" aria-hidden="true" />
-        <div className="flip__inner" onClick={() => { setRevealed((r) => !r); play('flip'); }} role="button" tabIndex={0}>
+        {/* Space is handled by the window-level listener above (works from anywhere on
+            the page); this only adds Enter, since a role="button" element is expected
+            to respond to both, and the global listener only checks for Space. */}
+        <div className="flip__inner" onClick={() => { setRevealed((r) => !r); play('flip'); }} role="button" tabIndex={0}
+             onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); setRevealed((r) => !r); play('flip'); } }}>
           <div className="flip__face">
             <span className="flip__label">{isCloze ? 'Fill in the blank' : 'Question'}</span>
             <p className="flip__text">{current.question}</p>

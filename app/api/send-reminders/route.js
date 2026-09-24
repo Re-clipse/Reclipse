@@ -83,7 +83,7 @@ async function sendExamReminders(admin, profileFor) {
       subject: `${ev.courses?.name || 'A course'}: ${ev.title} is ${when}`,
       html: `
         <p>Hey, just a heads up:</p>
-        <p><strong>${ev.title}</strong> (${ev.event_type}) for <strong>${ev.courses?.name || 'your course'}</strong>
+        <p><strong>${escapeHtml(ev.title)}</strong> (${escapeHtml(ev.event_type)}) for <strong>${escapeHtml(ev.courses?.name) || 'your course'}</strong>
         is ${when} (${ev.event_date}).</p>
         <p>Might be a good time to review your decks for it.</p>
         <p><a href="${SITE_URL}/decks">Open Reclipse</a></p>
@@ -132,14 +132,14 @@ async function sendStudySessionReminders(admin, profileFor) {
     const email = await getEmail(admin, s.user_id);
     if (!email) continue;
 
-    const examTitle = s.course_events?.title || 'your exam';
-    const courseName = s.course_events?.courses?.name;
+    const examTitle = escapeHtml(s.course_events?.title) || 'your exam';
+    const courseName = escapeHtml(s.course_events?.courses?.name);
     const ok = await sendEmail(s.user_id, email, {
-      subject: `Today's study session: ${examTitle}`,
+      subject: `Today's study session: ${s.course_events?.title || 'your exam'}`,
       html: `
         <p>Today's a planned study session ahead of <strong>${examTitle}</strong>${courseName ? ` (${courseName})` : ''}.</p>
-        ${s.decks?.title ? `<p>Deck: <strong>${s.decks.title}</strong></p>` : ''}
-        ${s.tip ? `<p>${s.tip}</p>` : ''}
+        ${s.decks?.title ? `<p>Deck: <strong>${escapeHtml(s.decks.title)}</strong></p>` : ''}
+        ${s.tip ? `<p>${escapeHtml(s.tip)}</p>` : ''}
         <p><a href="${SITE_URL}/calendar">Open your calendar</a></p>
       `,
     });
@@ -198,10 +198,10 @@ async function sendWeeklyDigests(admin, profiles) {
     if (!email) continue;
 
     const eventsHtml = events.map((e) =>
-      `<li><strong>${e.title}</strong> (${TYPE_LABEL[e.event_type] || e.event_type}${e.courses?.name ? `, ${e.courses.name}` : ''}) — ${e.event_date}</li>`
+      `<li><strong>${escapeHtml(e.title)}</strong> (${escapeHtml(TYPE_LABEL[e.event_type] || e.event_type)}${e.courses?.name ? `, ${escapeHtml(e.courses.name)}` : ''}) — ${e.event_date}</li>`
     ).join('');
     const sessionsHtml = sessions.map((s) =>
-      `<li>${s.session_date}: ${s.tip || `Study session for ${s.course_events?.title || 'an upcoming exam'}`}</li>`
+      `<li>${s.session_date}: ${s.tip ? escapeHtml(s.tip) : `Study session for ${escapeHtml(s.course_events?.title) || 'an upcoming exam'}`}</li>`
     ).join('');
 
     const ok = await sendEmail(userId, email, {
@@ -225,6 +225,17 @@ async function sendWeeklyDigests(admin, profiles) {
 }
 
 // ---------- shared helpers ----------
+// Course/event/deck titles are student-editable text (syllabus AI extraction,
+// or typed directly via the calendar's edit modal) that lands straight into
+// an HTML email body below. Nothing else in this codebase renders raw HTML
+// from user input, but a template literal like this has no equivalent to
+// React's automatic escaping, so it needs its own.
+function escapeHtml(str) {
+  return String(str ?? '').replace(/[&<>"']/g, (c) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+  }[c]));
+}
+
 function localToday(timeZone) {
   try {
     const parts = new Intl.DateTimeFormat('en-US', {

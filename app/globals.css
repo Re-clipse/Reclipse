@@ -316,6 +316,10 @@ button, input, textarea { font: inherit; color: inherit; }
   font-size: var(--text-sm);
   color: var(--gray-2);
 }
+.footer p { margin: 0 0 var(--s-2); }
+.footer__links { display: flex; justify-content: center; gap: var(--s-4); flex-wrap: wrap; }
+.footer__links a { color: var(--gray-2); text-decoration: underline; text-underline-offset: 2px; }
+.footer__links a:hover { color: var(--violet-700); }
 
 @media (max-width: 640px) {
   .nav { padding: var(--s-3) var(--s-4); }
@@ -574,7 +578,7 @@ button, input, textarea { font: inherit; color: inherit; }
   --ink:     #F2EFFA;
   --ink-2:   #C9C2DC;
   --gray:    #9A93AD;
-  --gray-2:  #726B85;
+  --gray-2:  #8A82A0; /* was #726B85 — measured 3.69:1 against --white here, below WCAG AA's 4.5:1 for the body text it's used as (footer, muted labels). This is 5.13:1. */
   --line:    #2E2740;
 
   --violet-50:  #211B33;
@@ -2122,3 +2126,15 @@ body, .card, .nav, .input, .textarea, .btn, .flip__face {
 .today-card { border-left: 4px solid var(--yellow-600); }
 .today-card__row { display: flex; align-items: flex-start; gap: var(--s-3); padding-block: var(--s-2); }
 .today-card__row + .today-card__row { border-top: 1px solid var(--line); }
+
+/* Honest cookie/storage notice — one line, one dismiss, no vendor toggles. */
+.consent-banner {
+  position: fixed; left: var(--s-4); right: var(--s-4); bottom: var(--s-4); z-index: 60;
+  max-width: 640px; margin-inline: auto;
+  display: flex; align-items: center; gap: var(--s-4); flex-wrap: wrap;
+  background: var(--white); border: 1px solid var(--line); border-radius: var(--r-lg);
+  box-shadow: var(--shadow-lg); padding: var(--s-4) var(--s-5);
+}
+.consent-banner p { flex: 1; min-width: 200px; font-size: var(--text-sm); color: var(--ink-2); margin: 0; }
+.consent-banner a { color: var(--violet-700); }
+@media (max-width: 480px) { .consent-banner { flex-direction: column; align-items: stretch; } }

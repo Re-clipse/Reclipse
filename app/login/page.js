@@ -22,12 +22,60 @@ function LoginInner() {
   // Pre-filled from a ?ref= link if one was clicked, but always editable —
   // someone who got a code verbally or by text can type it in directly.
   const [refCode, setRefCode] = useState(() => params.get('ref') || storedReferralCode() || '');
+  const [agree, setAgree] = useState(false);
 
-  // Already signed in? Don't make them log in again.
+  // Two-factor: shown instead of the normal form once a password has been
+  // verified (or useAuth sent someone here with ?mfa=1 because their
+  // existing session is password-only and the account has 2FA enrolled).
+  const [mfaStep, setMfaStep] = useState(false);
+  const [mfaCode, setMfaCode] = useState('');
+  const [factorId, setFactorId] = useState(null);
+  const [challengeId, setChallengeId] = useState(null);
+
+  async function beginMfaChallenge() {
+    const { data: factors, error: listError } = await supabase.auth.mfa.listFactors();
+    const totp = factors?.totp?.find((f) => f.status === 'verified');
+    if (listError || !totp) { setError('Could not start two-factor verification. Please try logging in again.'); return; }
+    const { data: ch, error: chError } = await supabase.auth.mfa.challenge({ factorId: totp.id });
+    if (chError) { setError(chError.message); return; }
+    setFactorId(totp.id);
+    setChallengeId(ch.id);
+    setMfaStep(true);
+  }
+
+  async function verifyMfaCode(e) {
+    e.preventDefault();
+    setError('');
+    if (mfaCode.trim().length !== 6) { setError('Enter the 6-digit code from your authenticator app.'); return; }
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.mfa.verify({ factorId, challengeId, code: mfaCode.trim() });
+      if (error) throw error;
+      router.push(next);
+    } catch (err) {
+      setError(/invalid|expired/i.test(err.message || '')
+        ? 'That code is incorrect or expired. Try the current code from your app.'
+        : err.message || 'Something went wrong. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // Already signed in? Don't make them log in again — unless the account has
+  // 2FA and this session hasn't cleared that second step yet, in which case
+  // show the code prompt right here instead of bouncing them straight through.
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      if (data.session) router.replace(next);
-    });
+    (async () => {
+      const { data } = await supabase.auth.getSession();
+      if (!data.session) return;
+      const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+      if (aal && aal.nextLevel === 'aal2' && aal.currentLevel !== aal.nextLevel) {
+        beginMfaChallenge();
+        return;
+      }
+      router.replace(next);
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [next, router]);
 
   function switchMode() {
@@ -62,6 +110,10 @@ function LoginInner() {
       setError('Password needs to be at least 6 characters.');
       return;
     }
+    if (mode === 'signup' && !agree) {
+      setError('Please confirm you’re 16+ and agree to the Terms and Privacy Policy first.');
+      return;
+    }
 
     setLoading(true);
     try {
@@ -87,6 +139,11 @@ function LoginInner() {
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
+        const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+        if (aal && aal.nextLevel === 'aal2' && aal.currentLevel !== aal.nextLevel) {
+          await beginMfaChallenge();
+          return;
+        }
         router.push(next);
         return;
       }
@@ -135,6 +192,28 @@ function LoginInner() {
         </div>
       </aside>
 
+      {mfaStep ? (
+        <div className="card animate-in auth__card">
+          <div className="u-mb-5">
+            <h2 className="auth__title">Two-factor verification</h2>
+            <p className="muted small u-mt-2">Enter the 6-digit code from your authenticator app.</p>
+          </div>
+          <form onSubmit={verifyMfaCode} className="stack">
+            <div className="field">
+              <label className="label" htmlFor="mfa-code">Code</label>
+              <input id="mfa-code" className="input" inputMode="numeric" pattern="[0-9]*" maxLength={6}
+                     autoComplete="one-time-code" autoFocus value={mfaCode}
+                     onChange={(e) => setMfaCode(e.target.value.replace(/\D/g, ''))}
+                     placeholder="123456" />
+            </div>
+            {error && <div className="alert alert--error">{error}</div>}
+            <button type="submit" className="btn btn--primary btn--block btn--lg" disabled={loading}>
+              {loading && <span className="spinner" />}
+              {loading ? 'Verifying…' : 'Verify'}
+            </button>
+          </form>
+        </div>
+      ) : (
       <div className="card animate-in auth__card">
         <div className="seg" role="tablist" aria-label="Log in or sign up">
           <button type="button" role="tab" aria-selected={!isSignup}
@@ -192,6 +271,17 @@ function LoginInner() {
             </div>
           )}
 
+          {isSignup && (
+            <label className="row" style={{ alignItems: 'flex-start', gap: 'var(--s-2)', cursor: 'pointer' }}>
+              <input type="checkbox" checked={agree} onChange={(e) => setAgree(e.target.checked)}
+                     style={{ width: 18, height: 18, marginTop: 2, flex: 'none' }} required />
+              <span className="small muted">
+                I&apos;m 16 or older and agree to the <a href="/terms" target="_blank" rel="noopener">Terms</a> and{' '}
+                <a href="/privacy" target="_blank" rel="noopener">Privacy Policy</a>.
+              </span>
+            </label>
+          )}
+
           {!isSignup && (
             <button type="button" onClick={sendReset} className="btn btn--quiet auth__forgot">
               Forgot your password?
@@ -201,7 +291,8 @@ function LoginInner() {
           {error && <div className="alert alert--error">{error}</div>}
           {notice && <div className="alert alert--note">{notice}</div>}
 
-          <button type="submit" className="btn btn--primary btn--block btn--lg" disabled={loading}>
+          <button type="submit" className="btn btn--primary btn--block btn--lg"
+                  disabled={loading || (isSignup && !agree)}>
             {loading && <span className="spinner" />}
             {loading ? 'One moment…' : isSignup ? 'Create account' : 'Log in'}
           </button>
@@ -214,6 +305,7 @@ function LoginInner() {
           </button>
         </p>
       </div>
+      )}
     </main>
   );
 }
