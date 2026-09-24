@@ -171,7 +171,7 @@ function StudyInner() {
           <p style={{ marginTop: 'var(--s-3)', fontWeight: 600, color: 'var(--violet-700)' }}>
             {encourage('sessionDone', total + again)}
           </p>
-          <div className="row actions-sm-stack" style={{ justifyContent: 'center', marginTop: 'var(--s-6)' }}>
+          <div className="row actions-sm-stack" style={{ justifyContent: 'center', flexWrap: 'wrap', marginTop: 'var(--s-6)' }}>
             {deckId && <a href={`/quiz?deck=${deckId}`} className="btn btn--primary">Take the quiz</a>}
             <a href="/decks" className="btn btn--ghost">My decks</a>
             <a href="/stats" className="btn btn--quiet">See progress</a>
