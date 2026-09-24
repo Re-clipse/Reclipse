@@ -147,7 +147,7 @@ function QuizInner() {
       return (
         <main className="page page--narrow">
           {onboardingReward && (
-            <div className="reward-pop">
+            <div className="reward-pop" role="status" aria-live="polite">
               <Mascot mood="excited" size={56} bounce />
               <div>
                 <div className="reward-pop__t">{onboardingReward.kind}</div>

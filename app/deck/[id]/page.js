@@ -18,6 +18,8 @@ function nanoid() {
   return crypto.randomUUID().replace(/-/g, '');
 }
 
+const DECK_TABS = [['cards', 'Cards'], ['quiz', 'Quiz'], ['summary', 'Summary'], ['history', 'History'], ['settings', 'Settings']];
+
 export default function DeckPage() {
   const { id } = useParams();
   const router = useRouter();
@@ -260,9 +262,9 @@ export default function DeckPage() {
     <main className="page">
       <div className="page__head">
         <div style={{ minWidth: 0 }}>
-          <h1 contentEditable suppressContentEditableWarning
+          <h1 contentEditable suppressContentEditableWarning role="textbox" aria-label="Deck title, editable"
               onBlur={(e) => renameDeck(e.target.textContent.trim() || deck.title)}
-              style={{ outline: 'none' }} title="Click to rename">{deck.title}</h1>
+              title="Click to rename">{deck.title}</h1>
           <p>{cards.length} cards · {quizCount} quiz questions</p>
         </div>
         <div className="row">
@@ -286,15 +288,24 @@ export default function DeckPage() {
         </div>
       )}
 
-      <div className="tabs">
-        {[['cards', 'Cards'], ['quiz', 'Quiz'], ['summary', 'Summary'], ['history', 'History'], ['settings', 'Settings']].map(([k, l]) => (
-          <button key={k} className={`tab${tab === k ? ' tab--on' : ''}`} onClick={() => setTab(k)}>{l}</button>
+      <div className="tabs" role="tablist" aria-label="Deck sections"
+           onKeyDown={(e) => {
+             if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+             e.preventDefault();
+             const i = DECK_TABS.findIndex(([k]) => k === tab);
+             const next = (i + (e.key === 'ArrowRight' ? 1 : DECK_TABS.length - 1)) % DECK_TABS.length;
+             setTab(DECK_TABS[next][0]);
+           }}>
+        {DECK_TABS.map(([k, l]) => (
+          <button key={k} type="button" role="tab" id={`deck-tab-${k}`} aria-selected={tab === k}
+                  aria-controls="deck-panel" tabIndex={tab === k ? 0 : -1}
+                  className={`tab${tab === k ? ' tab--on' : ''}`} onClick={() => setTab(k)}>{l}</button>
         ))}
       </div>
 
 
       {tab === 'cards' && (
-        <div className="stack">
+        <div className="stack" id="deck-panel" role="tabpanel" aria-labelledby="deck-tab-cards">
           <button className="btn btn--ghost" onClick={() => setAdding(true)}>+ Add a card</button>
           {cards.map((c) => (
             <div key={c.id} className="card crow">
@@ -316,7 +327,7 @@ export default function DeckPage() {
       )}
 
       {tab === 'quiz' && (
-        <div className="stack">
+        <div className="stack" id="deck-panel" role="tabpanel" aria-labelledby="deck-tab-quiz">
           <button className="btn btn--ghost" onClick={() => setAddingQuiz(true)}>+ Add a question</button>
           {!quizLoaded ? (
             <div className="skeleton" style={{ height: 120 }} />
@@ -349,16 +360,18 @@ export default function DeckPage() {
       )}
 
       {tab === 'summary' && (
-        deck.summary
-          ? <div className="summary-box animate-in">{deck.summary}</div>
-          : <div className="empty">
-              <h3>No summary for this deck</h3>
-              <p>Summaries are generated with newer study sets. Regenerate this deck to get one.</p>
-            </div>
+        <div id="deck-panel" role="tabpanel" aria-labelledby="deck-tab-summary">
+          {deck.summary
+            ? <div className="summary-box animate-in">{deck.summary}</div>
+            : <div className="empty">
+                <h3>No summary for this deck</h3>
+                <p>Summaries are generated with newer study sets. Regenerate this deck to get one.</p>
+              </div>}
+        </div>
       )}
 
       {tab === 'history' && (
-        <div className="stack">
+        <div className="stack" id="deck-panel" role="tabpanel" aria-labelledby="deck-tab-history">
           {!historyLoaded ? (
             <div className="skeleton" style={{ height: 120 }} />
           ) : sessions.length === 0 ? (
@@ -386,7 +399,7 @@ export default function DeckPage() {
       )}
 
       {tab === 'settings' && (
-        <div className="stack">
+        <div className="stack" id="deck-panel" role="tabpanel" aria-labelledby="deck-tab-settings">
           <div className="card stack">
             <label className="label" htmlFor="deck-course">Course</label>
             <select id="deck-course" className="input" value={deck.course_id || ''} onChange={(e) => setCourse(e.target.value)}>

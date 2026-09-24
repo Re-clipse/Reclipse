@@ -38,3 +38,10 @@ next-env.d.ts
 # /brag promo-video output (large local media, not app source)
 brag-output/
 brag-output-*/
+
+# test artifacts (traces, screenshots, videos, html reports) — regenerated
+# by `npm run test:e2e`, uploaded as CI artifacts on failure, never committed
+/test-results/
+/playwright-report/
+/blob-report/
+/coverage/

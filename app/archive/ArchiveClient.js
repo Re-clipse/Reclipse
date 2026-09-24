@@ -95,7 +95,7 @@ export default function ArchiveClient() {
             </p>
           </div>
           <button className="btn btn--page" disabled={busy}
-                  style={{ '--pa': ACCENTS.amber.solid }} onClick={() => membershipAction(() => startArchiveCheckout())}>
+                  style={{ '--pa': ACCENTS.amber.ink }} onClick={() => membershipAction(() => startArchiveCheckout())}>
             {busy ? 'Opening…' : price ? `Get access — ${formatArchivePrice(price)}` : 'Get access'}
           </button>
         </div>

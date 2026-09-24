@@ -20,6 +20,7 @@ export default function ReferralPrompt({ code, link, title, note }) {
           setCopied(true);
           setTimeout(() => setCopied(false), 2000);
         }}>{copied ? 'Copied' : 'Copy link'}</button>
+        <span role="status" aria-live="polite" className="sr-only">{copied ? 'Link copied' : ''}</span>
       </div>
     </div>
   );

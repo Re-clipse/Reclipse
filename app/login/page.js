@@ -11,7 +11,11 @@ function LoginInner() {
   const router = useRouter();
 
   // Where to send the user afterwards (e.g. /upload sends them here when logged out).
-  const next = params.get('next') || '/decks';
+  // Only ever a same-origin relative path — a raw `?next=` from the URL could
+  // otherwise be an absolute/protocol-relative URL, turning a successful login
+  // into an open redirect to an attacker-controlled page.
+  const rawNext = params.get('next');
+  const next = rawNext && /^\/(?!\/)/.test(rawNext) ? rawNext : '/decks';
   const [mode, setMode] = useState(params.get('mode') === 'signup' ? 'signup' : 'login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');

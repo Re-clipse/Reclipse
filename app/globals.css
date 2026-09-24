@@ -31,7 +31,10 @@
   /* Status */
   --error:   #DC2626;
   --error-bg:#FEF2F2;
-  --success: #059669;
+  /* Darkened from #059669: white text on the original at 14px/600 was ~3.77:1,
+     below WCAG AA's 4.5:1 minimum for normal text — this is used as a solid
+     button/toast background with white text (e.g. .toast--success). */
+  --success: #047857;
 
   /* Type scale */
   --text-xs: 0.75rem;
