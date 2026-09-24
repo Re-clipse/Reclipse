@@ -100,7 +100,8 @@ export default function Nav() {
               <button onClick={signOut} className="btn btn--quiet">Sign out</button>
             </span>
             <button className="theme-toggle" onClick={() => setOpen(!open)}
-                    aria-label="Menu" style={{ display: 'none' }} data-mobile-menu>
+                    aria-label="Menu" aria-expanded={open} aria-controls="nav-sheet"
+                    style={{ display: 'none' }} data-mobile-menu>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
                    strokeLinecap="round"><path d="M3 6h18M3 12h18M3 18h18" /></svg>
             </button>
@@ -114,7 +115,7 @@ export default function Nav() {
       </div>
 
       {open && (
-        <div className="nav__sheet">
+        <div className="nav__sheet" id="nav-sheet">
           {LINKS.map(([href, label]) => (
             <a key={href} href={href} className="nav__link">{label}</a>
           ))}

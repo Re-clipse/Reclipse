@@ -61,7 +61,7 @@ function QuizInner() {
 
     supabase.from('quiz_responses').insert({
       user_id: user.id, question_id: q.id, deck_id: deckId, chosen_index: idx, correct: ok,
-    }).then(() => {});
+    }).then(({ error }) => { if (error) console.error('quiz_responses save failed:', error); });
   }, [picked, q, user, deckId]);
 
   const next = useCallback(() => { setPicked(null); setI((n) => n + 1); play('next'); }, []);
@@ -85,11 +85,11 @@ function QuizInner() {
         user_id: user.id, deck_id: deckId, kind: 'quiz',
         reviewed: questions.length, correct,
         duration_seconds: Math.round((Date.now() - startedAt.current) / 1000),
-      }).then(() => {});
+      }).then(({ error }) => { if (error) console.error('study_sessions save failed:', error); });
       if (onboarding) {
         supabase.from('profiles')
           .upsert({ user_id: user.id, onboarded_at: new Date().toISOString() }, { onConflict: 'user_id' })
-          .then(() => {});
+          .then(({ error }) => { if (error) console.error('onboarded_at save failed:', error); });
       }
     }
   }, [status, i, questions.length, correct, user, deckId, onboarding]);
@@ -212,13 +212,15 @@ function QuizInner() {
             return (
               <button key={idx} className={cls} onClick={(ev) => choose(idx, ev)} disabled={answered}>
                 <span className="option__key">{KEYS[idx]}</span><span>{opt}</span>
+                {answered && idx === q.correct_index && <span className="sr-only"> — correct answer</span>}
+                {answered && idx === picked && idx !== q.correct_index && <span className="sr-only"> — your answer, incorrect</span>}
               </button>
             );
           })}
         </div>
         {answered && (
           <>
-            <div className="explain">
+            <div className="explain" role="status" aria-live="polite">
               <strong>{picked === q.correct_index ? 'Correct' : 'Not quite'}</strong>
               {q.explanation || 'No explanation was provided for this question.'}
             </div>

@@ -12,7 +12,7 @@ export async function POST(request) {
   const { data: { user }, error: userError } = await supabase.auth.getUser();
   if (userError || !user) return Response.json({ error: 'Please log in first.' }, { status: 401 });
 
-  const { collabId } = await request.json();
+  const { collabId } = await request.json().catch(() => ({}));
   if (!collabId) return Response.json({ error: 'Missing link.' }, { status: 400 });
 
   const admin = supabaseAdmin();

@@ -9,7 +9,8 @@ export default function SharedDeckPage() {
   const router = useRouter();
 
   const [deck, setDeck] = useState(null);
-  const [cards, setCards] = useState([]);
+  const [cards, setCards] = useState([]); // preview only — first 5, see copyToAccount for the full fetch
+  const [cardCount, setCardCount] = useState(0);
   const [quizCount, setQuizCount] = useState(0);
   const [status, setStatus] = useState('loading');
   const [copying, setCopying] = useState(false);
@@ -22,11 +23,15 @@ export default function SharedDeckPage() {
       const { data: d } = await supabase.from('decks')
         .select('id, title, summary, is_public').eq('share_id', shareId).maybeSingle();
       if (!d || !d.is_public) { setStatus('missing'); return; }
-      const [{ data: c }, { count }] = await Promise.all([
-        supabase.from('flashcards').select('id, question, answer, card_type').eq('deck_id', d.id),
+      // Only a 5-card preview is fetched here — the "+N more, save to unlock"
+      // gate below would otherwise be purely visual, since the full answers
+      // would already be sitting in the browser's network response.
+      const [{ data: c }, { count: fCount }, { count: qCount }] = await Promise.all([
+        supabase.from('flashcards').select('id, question, answer, card_type').eq('deck_id', d.id).limit(5),
+        supabase.from('flashcards').select('id', { count: 'exact', head: true }).eq('deck_id', d.id),
         supabase.from('quiz_questions').select('id', { count: 'exact', head: true }).eq('deck_id', d.id),
       ]);
-      setDeck(d); setCards(c || []); setQuizCount(count || 0); setStatus('ready');
+      setDeck(d); setCards(c || []); setCardCount(fCount || 0); setQuizCount(qCount || 0); setStatus('ready');
     })();
     supabase.auth.getSession().then(({ data }) => setSignedIn(!!data.session));
   }, [shareId]);
@@ -45,8 +50,11 @@ export default function SharedDeckPage() {
       }).select().single();
       if (de) throw de;
 
-      if (cards.length) {
-        await supabase.from('flashcards').insert(cards.map((c) => ({
+      // Fetched fresh here, not from the page's 5-card preview state.
+      const { data: allCards } = await supabase.from('flashcards')
+        .select('question, answer, card_type').eq('deck_id', deck.id);
+      if (allCards?.length) {
+        await supabase.from('flashcards').insert(allCards.map((c) => ({
           deck_id: newDeck.id, question: c.question, answer: c.answer, card_type: c.card_type || 'basic',
         })));
       }
@@ -80,7 +88,7 @@ export default function SharedDeckPage() {
         <div>
           <span className="badge">Shared deck</span>
           <h1 className="u-mt-3">{deck.title}</h1>
-          <p>{cards.length} flashcards · {quizCount} quiz questions</p>
+          <p>{cardCount} flashcards · {quizCount} quiz questions</p>
         </div>
         <div className="stack" style={{ alignItems: 'flex-end', gap: 'var(--s-1)' }}>
           <button className="btn btn--primary" onClick={copyToAccount} disabled={copying}>
@@ -91,7 +99,7 @@ export default function SharedDeckPage() {
         </div>
       </div>
 
-      {error && <div className="alert alert--error u-mb-4">{error}</div>}
+      {error && <div role="alert" className="alert alert--error u-mb-4">{error}</div>}
 
       {deck.summary && (
         <div className="summary-box u-mb-5">{deck.summary}</div>
@@ -99,7 +107,7 @@ export default function SharedDeckPage() {
 
       <h3 className="u-mb-4">Preview</h3>
       <div className="stack">
-        {cards.slice(0, 5).map((c) => (
+        {cards.map((c) => (
           <div key={c.id} className="card">
             <div className="u-fw-650 u-mb-1">{c.question}</div>
             <div className="small muted">{c.answer}</div>
@@ -107,9 +115,9 @@ export default function SharedDeckPage() {
         ))}
       </div>
 
-      {cards.length > 5 && (
+      {cardCount > cards.length && (
         <div className="empty u-mt-5">
-          <h3>+ {cards.length - 5} more cards</h3>
+          <h3>+ {cardCount - cards.length} more cards</h3>
           <p>Save this deck to your account to study all of it with spaced repetition.</p>
           <button className="btn btn--primary btn--lg" onClick={copyToAccount} disabled={copying}>
             Save to my decks

@@ -32,7 +32,11 @@ export async function POST(request) {
   // subscription record. (See supabase/009_fix_referred_by_on_delete.sql for
   // the one FK that needed fixing before this could cascade cleanly.)
   const { error } = await admin.auth.admin.deleteUser(user.id);
-  if (error) {
+  // A double-click/retry can send two identical requests; if the first one
+  // already deleted this user, the second's "user not found" is the desired
+  // end state, not a failure — don't show it as one.
+  const alreadyGone = error?.status === 404 || /not found/i.test(error?.message || '');
+  if (error && !alreadyGone) {
     console.error('account delete error:', error);
     return Response.json(
       { error: 'Could not delete your account. Please try again or contact support.' },

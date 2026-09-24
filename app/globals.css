@@ -200,6 +200,13 @@ button, input, textarea { font: inherit; color: inherit; }
 }
 .textarea { resize: vertical; min-height: 180px; line-height: 1.6; font-family: inherit; }
 
+/* Visually hidden but readable by screen readers — for cues (e.g. "correct
+   answer") that shouldn't duplicate onto the visible page. */
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+}
+
 /* ---------- Messages ---------- */
 .alert {
   display: flex; gap: var(--s-2); align-items: flex-start;
@@ -209,6 +216,11 @@ button, input, textarea { font: inherit; color: inherit; }
 }
 .alert--error { background: var(--error-bg); color: var(--error); border: 1px solid #FECACA; }
 .alert--note  { background: var(--yellow-200); color: #854D0E; border: 1px solid #FDE68A; }
+/* --yellow-200 flips to a near-black wash in dark mode (see the dark-theme
+   block below), but this text color doesn't — leaving it at 1.92:1, nearly
+   invisible. Re-use the light-mode border color (10.57:1 here) as the text. */
+:root[data-theme='dark'] .alert--note,
+:root[data-theme='dark'] .badge--accent { color: #FDE68A; }
 
 /* ---------- Misc components ---------- */
 .badge {
@@ -561,6 +573,10 @@ button, input, textarea { font: inherit; color: inherit; }
 .option--wrong { border-color: var(--error); background: var(--error-bg); }
 .option--wrong .option__key { background: var(--error); border-color: var(--error); color: #fff; }
 .option--muted { opacity: .55; }
+/* Neutral "picked" state for an in-progress exam, where correctness isn't
+   known yet — deliberately not green/red like .option--correct/--wrong. */
+.option--selected { border-color: var(--violet-700); background: var(--violet-50); }
+.option--selected .option__key { background: var(--violet-700); border-color: var(--violet-700); color: #fff; }
 
 .explain {
   margin-top: var(--s-5); padding: var(--s-4);
@@ -600,13 +616,18 @@ button, input, textarea { font: inherit; color: inherit; }
   --shadow-lg: 0 12px 32px rgba(0,0,0,.5);
 }
 :root[data-theme='dark'] .nav { background: rgba(20,17,28,.82); }
-:root[data-theme='dark'] .btn--primary { color: #16121F; }
+/* .btn--primary and .cta-band h2/p sit on --grad-violet, not the warm
+   yellow/orange --btn--accent sits on — #16121F/#3B2F63 (dark text meant
+   for a light background) measured 2.59-3.23:1 and 1.67-2.08:1 against it,
+   both failing WCAG AA. --ink is the theme's normal light-on-dark text
+   color and passes comfortably (5.11-6.37:1) against both gradient stops. */
+:root[data-theme='dark'] .btn--primary { color: var(--ink); }
 :root[data-theme='dark'] .btn--accent { color: #16121F; }
 :root[data-theme='dark'] .option--correct { background: #123026; }
 :root[data-theme='dark'] .option--wrong { background: #351A1E; }
 :root[data-theme='dark'] .drop--done { background: #123026; }
-:root[data-theme='dark'] .cta-band h2 { color: #16121F; }
-:root[data-theme='dark'] .cta-band p { color: #3B2F63; }
+:root[data-theme='dark'] .cta-band h2 { color: var(--ink); }
+:root[data-theme='dark'] .cta-band p { color: var(--ink); }
 
 .theme-toggle {
   display: grid; place-items: center;

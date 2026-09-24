@@ -1,7 +1,11 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { supabaseFromRequest } from '@/lib/supabaseServer';
 
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+export const maxDuration = 60;
+
+// Fail fast instead of hanging past the platform's own timeout, matching
+// the pattern used by the other AI-backed routes in this app.
+const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY, timeout: 50_000, maxRetries: 0 });
 const MAX_CHARS = 20000;
 const MAX_EVENTS = 40;
 
@@ -10,7 +14,8 @@ export async function POST(request) {
   const { data: { user }, error: userError } = await supabase.auth.getUser();
   if (userError || !user) return Response.json({ error: 'Please log in first.' }, { status: 401 });
 
-  let { text } = await request.json();
+  const body = await request.json().catch(() => ({}));
+  let text = typeof body.text === 'string' ? body.text : '';
   if (!text || text.trim().length < 30) {
     return Response.json({ error: 'That text looks too short to be a syllabus.' }, { status: 400 });
   }
@@ -37,7 +42,8 @@ Respond with ONLY valid JSON, no markdown fences, no commentary:
       messages: [{ role: 'user', content: text }],
     });
 
-    const raw = response.content[0].text.trim();
+    const block = response.content.find((c) => c.type === 'text');
+    const raw = (block?.text || '').trim();
     const cleaned = raw.replace(/^```json\s*/i, '').replace(/```$/, '');
     const parsed = JSON.parse(cleaned);
 

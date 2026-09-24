@@ -38,9 +38,13 @@ function UploadInner() {
     if (!file) return;
     setFileName(file.name); setError(''); setNotice(''); setExtracting(true);
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) { router.replace('/login?next=/upload'); return; }
       const body = new FormData();
       body.append('file', file);
-      const res = await fetch('/api/extract-pdf', { method: 'POST', body });
+      const res = await fetch('/api/extract-pdf', {
+        method: 'POST', body, headers: { Authorization: `Bearer ${session.access_token}` },
+      });
       const data = await res.json();
       if (!res.ok) { setError(data.error || 'Could not read that file.'); setFileName(''); return; }
       setText(data.text);
@@ -239,7 +243,7 @@ function UploadInner() {
           </div>
 
           {notice && <div className="alert alert--note">{notice}</div>}
-          {error && <div className="alert alert--error">{error}</div>}
+          {error && <div role="alert" className="alert alert--error">{error}</div>}
 
           <div className="up-actions">
             <button type="submit" className="btn btn--primary btn--lg" disabled={extracting}>

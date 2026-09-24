@@ -60,12 +60,15 @@ export default function ExamPage() {
       supabase.from('study_sessions').insert({
         user_id: user.id, kind: 'exam', reviewed: questions.length, correct: score,
         duration_seconds: Math.round((Date.now() - startedAt.current) / 1000),
-      }).then(() => {});
+      }).then(({ error }) => { if (error) console.error('study_sessions save failed:', error); });
       const rows = questions.filter((q) => answers[q.id] !== undefined).map((q) => ({
         user_id: user.id, question_id: q.id, deck_id: q.deck_id,
         chosen_index: answers[q.id], correct: answers[q.id] === q.correct_index,
       }));
-      if (rows.length) supabase.from('quiz_responses').insert(rows).then(() => {});
+      if (rows.length) {
+        supabase.from('quiz_responses').insert(rows)
+          .then(({ error }) => { if (error) console.error('quiz_responses save failed:', error); });
+      }
     }
   }, [questions, answers, user]);
 
@@ -155,7 +158,7 @@ export default function ExamPage() {
               </div>
             </div>
 
-            {loadErr && <div className="alert alert--error">{loadErr}</div>}
+            {loadErr && <div role="alert" className="alert alert--error">{loadErr}</div>}
             <button className="btn btn--primary btn--lg" onClick={start}>Start exam</button>
           </div>
         )}
@@ -225,7 +228,7 @@ export default function ExamPage() {
         <div className="options">
           {opts.map((opt, idx) => (
             <button key={idx}
-                    className={`option${answers[q.id] === idx ? ' option--correct' : ''}`}
+                    className={`option${answers[q.id] === idx ? ' option--selected' : ''}`}
                     onClick={() => setAnswers((a) => ({ ...a, [q.id]: idx }))}>
               <span className="option__key">{KEYS[idx]}</span><span>{opt}</span>
             </button>

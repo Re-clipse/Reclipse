@@ -45,7 +45,7 @@ function StudyInner() {
       let cards = [];
       if (dueOnly) {
         const { data: prog } = await supabase.from('card_progress')
-          .select('*').lte('due_at', new Date().toISOString());
+          .select('*').lte('due_at', new Date().toISOString()).limit(2000);
         const ids = (prog || []).map((p) => p.flashcard_id);
         if (!ids.length) { setStatus('empty'); return; }
         const { data } = await supabase.from('flashcards').select('*').in('id', ids);
@@ -53,14 +53,20 @@ function StudyInner() {
         setProgress(Object.fromEntries((prog || []).map((p) => [p.flashcard_id, p])));
       } else {
         if (!deckId) { setStatus('empty'); return; }
-        const [{ data: d }, { data: c }, { data: prog }] = await Promise.all([
+        const [{ data: d }, { data: c }] = await Promise.all([
           supabase.from('decks').select('*').eq('id', deckId).maybeSingle(),
           supabase.from('flashcards').select('*').eq('deck_id', deckId).order('created_at'),
-          supabase.from('card_progress').select('*'),
         ]);
         if (!d) { setStatus('error'); return; }
         setDeck(d);
         cards = c || [];
+        // Scoped to this deck's own cards — fetching the user's whole SRS
+        // history here (across every deck they've ever studied) was wasted
+        // work that only grows with how long someone's used the app.
+        const cardIds = cards.map((x) => x.id);
+        const { data: prog } = cardIds.length
+          ? await supabase.from('card_progress').select('*').in('flashcard_id', cardIds)
+          : { data: [] };
         setProgress(Object.fromEntries((prog || []).map((p) => [p.flashcard_id, p])));
       }
       if (!cards.length) { setStatus('empty'); return; }
@@ -91,7 +97,7 @@ function StudyInner() {
     supabase.from('card_progress').upsert(
       { user_id: user.id, flashcard_id: current.id, ...next },
       { onConflict: 'user_id,flashcard_id' }
-    ).then(() => {});
+    ).then(({ error }) => { if (error) console.error('card_progress save failed:', error); });
   }, [current, progress, user]);
 
   // Log the session once, when the queue empties.
@@ -102,7 +108,7 @@ function StudyInner() {
         user_id: user.id, deck_id: deckId || null, kind: 'flashcards',
         reviewed: total + again, correct: total,
         duration_seconds: Math.round((Date.now() - startedAt.current) / 1000),
-      }).then(() => {});
+      }).then(({ error }) => { if (error) console.error('study_sessions save failed:', error); });
     }
   }, [status, queue.length, total, again, user, deckId]);
 

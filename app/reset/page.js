@@ -63,7 +63,7 @@ export default function ResetPage() {
                      value={confirm} onChange={(e) => setConfirm(e.target.value)}
                      placeholder="Type it again" required />
             </div>
-            {error && <div className="alert alert--error">{error}</div>}
+            {error && <div role="alert" className="alert alert--error">{error}</div>}
             <button className="btn btn--primary btn--block btn--lg" disabled={loading}>
               {loading && <span className="spinner" />}
               {loading ? 'Saving…' : 'Save password'}

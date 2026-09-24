@@ -10,8 +10,12 @@ import Modal from '@/components/Modal';
 import LoadError from '@/components/LoadError';
 import { withTimeout } from '@/lib/net';
 
+// share_id/collab_id are bearer tokens — the entire authorization boundary
+// for a shared or collaborative deck link — so they need a CSPRNG, not
+// Math.random() (which is also variable-length: e.g. (0.5).toString(36)
+// yields a much shorter string than intended).
 function nanoid() {
-  return Math.random().toString(36).slice(2, 10) + Math.random().toString(36).slice(2, 6);
+  return crypto.randomUUID().replace(/-/g, '');
 }
 
 export default function DeckPage() {
@@ -182,8 +186,8 @@ export default function DeckPage() {
                 <div className="crow__a">{c.answer}</div>
               </div>
               <div className="crow__tools">
-                <button className="icon-btn" onClick={() => setEditing(c)} aria-label="Edit">✎</button>
-                <button className="icon-btn icon-btn--danger" onClick={() => deleteCard(c.id)} aria-label="Delete">×</button>
+                <button className="icon-btn" onClick={() => setEditing(c)} aria-label={`Edit "${c.question}"`}>✎</button>
+                <button className="icon-btn icon-btn--danger" onClick={() => deleteCard(c.id)} aria-label={`Delete "${c.question}"`}>×</button>
               </div>
             </div>
           ))}
@@ -203,8 +207,8 @@ export default function DeckPage() {
       {tab === 'settings' && (
         <div className="stack">
           <div className="card stack">
-            <label className="label">Course</label>
-            <select className="input" value={deck.course_id || ''} onChange={(e) => setCourse(e.target.value)}>
+            <label className="label" htmlFor="deck-course">Course</label>
+            <select id="deck-course" className="input" value={deck.course_id || ''} onChange={(e) => setCourse(e.target.value)}>
               <option value="">Uncategorised</option>
               {courses.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
@@ -337,12 +341,12 @@ function CardModal({ card, onCancel, onSave }) {
     <Modal title={card.id ? 'Edit card' : 'New card'} onClose={onCancel}>
         <div className="stack">
           <div className="field">
-            <label className="label">Question</label>
-            <textarea className="textarea" style={{ minHeight: 90 }} value={q} onChange={(e) => setQ(e.target.value)} autoFocus />
+            <label className="label" htmlFor="card-q">Question</label>
+            <textarea id="card-q" className="textarea" style={{ minHeight: 90 }} value={q} onChange={(e) => setQ(e.target.value)} autoFocus />
           </div>
           <div className="field">
-            <label className="label">Answer</label>
-            <textarea className="textarea" style={{ minHeight: 90 }} value={a} onChange={(e) => setA(e.target.value)} />
+            <label className="label" htmlFor="card-a">Answer</label>
+            <textarea id="card-a" className="textarea" style={{ minHeight: 90 }} value={a} onChange={(e) => setA(e.target.value)} />
           </div>
           <div className="row">
             <button className="btn btn--primary" disabled={!q.trim() || !a.trim()}

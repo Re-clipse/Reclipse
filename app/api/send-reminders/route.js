@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { signUnsubscribeToken } from '@/lib/emailToken';
 
@@ -29,8 +30,14 @@ const DEFAULT_PROFILE = {
 };
 
 export async function GET(request) {
-  const auth = request.headers.get('authorization');
-  if (process.env.CRON_SECRET && auth !== `Bearer ${process.env.CRON_SECRET}`) {
+  // Fail closed: an unset CRON_SECRET must block every request, not skip the
+  // check — this route admin-sends email to every user, bypassing RLS.
+  if (!process.env.CRON_SECRET) {
+    return Response.json({ error: 'CRON_SECRET is not configured' }, { status: 503 });
+  }
+  const given = Buffer.from(request.headers.get('authorization') || '');
+  const expected = Buffer.from(`Bearer ${process.env.CRON_SECRET}`);
+  if (given.length !== expected.length || !crypto.timingSafeEqual(given, expected)) {
     return Response.json({ error: 'Unauthorized' }, { status: 401 });
   }
 

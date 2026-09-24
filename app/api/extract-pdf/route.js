@@ -1,10 +1,12 @@
 import pdfParse from 'pdf-parse';
 import Anthropic from '@anthropic-ai/sdk';
+import { supabaseFromRequest } from '@/lib/supabaseServer';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
 
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+// Fail fast instead of hanging past this route's own maxDuration.
+const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY, timeout: 50_000, maxRetries: 0 });
 
 const MAX_FILE_BYTES = 15 * 1024 * 1024;   // 15MB
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;   // Anthropic image limit
@@ -65,6 +67,15 @@ Output only the transcription, no preamble.`,
 }
 
 export async function POST(request) {
+  // Reading a photo spends Anthropic vision-API credit per call — same class
+  // of cost this app already caps for /api/generate. Require login so this
+  // isn't a free, unlimited, unauthenticated way to burn that credit.
+  const supabase = supabaseFromRequest(request);
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  if (userError || !user) {
+    return Response.json({ error: 'Please log in to upload a file.' }, { status: 401 });
+  }
+
   try {
     const formData = await request.formData();
     const file = formData.get('file');

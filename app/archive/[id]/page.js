@@ -106,7 +106,7 @@ function ArchiveDeckInner() {
               Campus Archive members can study every archived deck: all the flashcards and practice
               quizzes, shared by other students taking (or who&apos;ve taken) the course.
             </p>
-            {error && <div className="alert alert--error u-mt-4">{error}</div>}
+            {error && <div role="alert" className="alert alert--error u-mt-4">{error}</div>}
             <button className="btn btn--primary btn--block btn--lg u-mt-5"
                     onClick={subscribe} disabled={subscribing}>
               {subscribing && <span className="spinner" />}

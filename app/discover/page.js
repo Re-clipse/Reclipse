@@ -43,13 +43,13 @@ export default function DiscoverPage() {
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" />
           </svg>
-          <input className="input" placeholder="Filter by course, e.g. BI110" value={q}
+          <input className="input" aria-label="Filter by course" placeholder="Filter by course, e.g. BI110" value={q}
                  onChange={(e) => setQ(e.target.value)} />
         </div>
         <button className="btn btn--ghost">Search</button>
       </form>
 
-      {error && decks && decks.length > 0 && <div className="alert alert--error">{error}</div>}
+      {error && decks && decks.length > 0 && <div role="alert" className="alert alert--error">{error}</div>}
 
       {decks === null ? (
         <div className="stack">{[0, 1, 2].map((i) => <div key={i} className="skeleton" style={{ height: 76 }} />)}</div>

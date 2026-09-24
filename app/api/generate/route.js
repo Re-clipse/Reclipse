@@ -31,25 +31,26 @@ export async function POST(request) {
     return Response.json({ error: 'Please log in to generate a study set.' }, { status: 401 });
   }
 
-  // Daily and monthly caps, checked before we spend anything on the API call.
-  // Daily guards against a burst; monthly is the real cost cap (see the arithmetic above).
+  // Daily and monthly caps, checked and reserved atomically before we spend
+  // anything on the API call — a Postgres function serializes this per user
+  // (advisory lock) so two concurrent requests can't both read "under the
+  // limit" before either writes. Reserving up front, kept even if this
+  // generation attempt fails downstream, is deliberate: a failed attempt
+  // still spent real Anthropic tokens, which is exactly the cost this cap
+  // exists to bound (see the arithmetic above).
   const today = new Date().toISOString().slice(0, 10);
   const monthStart = `${today.slice(0, 7)}-01`;
-  const { data: usageRows } = await supabase
-    .from('usage_limits').select('usage_date, generations_count')
-    .eq('user_id', user.id).gte('usage_date', monthStart);
-
-  const usedToday = usageRows?.find((r) => r.usage_date === today)?.generations_count || 0;
-  if (usedToday >= DAILY_GENERATION_LIMIT) {
-    return Response.json(
-      { error: `You've hit today's limit of ${DAILY_GENERATION_LIMIT} study sets. Try again tomorrow.` },
-      { status: 429 }
-    );
+  const { data: allowed, error: usageError } = await supabase.rpc('try_increment_generation_usage', {
+    p_user_id: user.id, p_today: today, p_month_start: monthStart,
+    p_daily_limit: DAILY_GENERATION_LIMIT, p_monthly_limit: MONTHLY_GENERATION_LIMIT,
+  });
+  if (usageError) {
+    console.error('generate: usage check failed:', usageError);
+    return Response.json({ error: 'Something went wrong. Please try again.' }, { status: 500 });
   }
-  const usedThisMonth = (usageRows || []).reduce((n, r) => n + (r.generations_count || 0), 0);
-  if (usedThisMonth >= MONTHLY_GENERATION_LIMIT) {
+  if (!allowed) {
     return Response.json(
-      { error: `You've hit this month's limit of ${MONTHLY_GENERATION_LIMIT} study sets. It resets next month.` },
+      { error: `You've hit today's or this month's study set limit. Try again later.` },
       { status: 429 }
     );
   }
@@ -97,11 +98,6 @@ export async function POST(request) {
         { status: 422 }
       );
     }
-
-    await supabase.from('usage_limits').upsert(
-      { user_id: user.id, usage_date: today, generations_count: usedToday + 1 },
-      { onConflict: 'user_id,usage_date' }
-    );
 
     return Response.json(parsed);
   } catch (err) {

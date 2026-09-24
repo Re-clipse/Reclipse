@@ -35,7 +35,7 @@ export default function StatsPage() {
         supabase.from('study_sessions').select('*').order('created_at', { ascending: false }).limit(500),
         supabase.from('quiz_responses').select('deck_id, correct').limit(2000),
         supabase.from('decks').select('id, title'),
-        supabase.from('card_progress').select('due_at, interval_days'),
+        supabase.from('card_progress').select('due_at, interval_days').limit(5000),
       ]), 12000, 'stats');
       setSessions(s.data || []);
       setResponses(r.data || []);

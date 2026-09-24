@@ -49,7 +49,7 @@ export default function WelcomePage() {
             <input id="course" className="input" autoFocus placeholder="e.g. BI110 - Cell Biology"
                    value={course} onChange={(e) => setCourse(e.target.value)} />
           </div>
-          {error && <div className="alert alert--error">{error}</div>}
+          {error && <div role="alert" className="alert alert--error">{error}</div>}
           <button className="btn btn--primary btn--block btn--lg" disabled={saving}>
             {saving && <span className="spinner" />}{saving ? 'Setting up\u2026' : 'Continue'}
           </button>

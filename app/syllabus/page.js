@@ -33,9 +33,13 @@ export default function SyllabusPage() {
     if (!file) return;
     setFileName(file.name); setError(''); setExtracting(true); setEvents(null);
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) { setError('Please log in to upload a file.'); return; }
       const body = new FormData();
       body.append('file', file);
-      const res = await fetch('/api/extract-pdf', { method: 'POST', body });
+      const res = await fetch('/api/extract-pdf', {
+        method: 'POST', body, headers: { Authorization: `Bearer ${session.access_token}` },
+      });
       const data = await res.json();
       if (!res.ok) { setError(data.error || 'Could not read that file.'); return; }
       setText(data.text);
@@ -147,15 +151,15 @@ export default function SyllabusPage() {
 
       <form onSubmit={extractDates} className="stack" style={{ gap: 'var(--s-5)' }}>
         <div className="field">
-          <label className="label">Course</label>
+          <label className="label" htmlFor="syl-course">Course</label>
           {courses.length > 0 && (
-            <select className="input" value={courseId} onChange={(e) => { setCourseId(e.target.value); setNewCourse(''); }}>
+            <select id="syl-course" className="input" value={courseId} onChange={(e) => { setCourseId(e.target.value); setNewCourse(''); }}>
               <option value="">New course</option>
               {courses.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
           )}
           {!courseId && (
-            <input className="input" style={{ marginTop: courses.length ? 8 : 0 }} placeholder="e.g. BI110 - Cell Biology"
+            <input id={courses.length ? undefined : 'syl-course'} className="input" style={{ marginTop: courses.length ? 8 : 0 }} placeholder="e.g. BI110 - Cell Biology"
                    value={newCourse} onChange={(e) => setNewCourse(e.target.value)} />
           )}
         </div>
@@ -186,7 +190,7 @@ export default function SyllabusPage() {
                     placeholder="Paste your course schedule / syllabus text here\u2026" />
         </div>
 
-        {error && <div className="alert alert--error">{error}</div>}
+        {error && <div role="alert" className="alert alert--error">{error}</div>}
 
         <button type="submit" className="btn btn--primary btn--lg" disabled={parsing || extracting}>
           {parsing && <span className="spinner" />}{parsing ? 'Reading dates\u2026' : 'Find dates'}
@@ -221,7 +225,7 @@ export default function SyllabusPage() {
                   </p>
                 </div>
                 <input type="checkbox" checked={optIn} onChange={(e) => setOptIn(e.target.checked)}
-                       style={{ width: 20, height: 20 }} />
+                       aria-label="Email me reminders" style={{ width: 20, height: 20 }} />
               </div>
 
               <button className="btn btn--primary btn--lg" onClick={saveEvents} disabled={saving}>

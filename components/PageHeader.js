@@ -9,7 +9,7 @@ export default function PageHeader({ icon, title, subtitle, accent = 'violet', a
     <div className="ph" style={{ '--pa': c.solid, '--pa-soft': c.soft, '--pa-ink': c.ink }}>
       <div className="ph__row">
         <div className="ph__lead">
-          <div className="ph__icon">{icon}</div>
+          <div className="ph__icon" aria-hidden="true">{icon}</div>
           <div>
             <h1 className="ph__title">{title}</h1>
             {subtitle && <p className="ph__sub">{subtitle}</p>}

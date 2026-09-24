@@ -374,7 +374,7 @@ export default function SettingsPage() {
                      value={enrollCode} onChange={(e) => setEnrollCode(e.target.value.replace(/\D/g, ''))}
                      placeholder="123456" autoFocus />
             </div>
-            {mfaErr && <div className="alert alert--error">{mfaErr}</div>}
+            {mfaErr && <div role="alert" className="alert alert--error">{mfaErr}</div>}
             <div className="row">
               <button type="submit" className="btn btn--primary" disabled={mfaBusy}>
                 {mfaBusy && <span className="spinner" />}Verify and enable
@@ -383,7 +383,7 @@ export default function SettingsPage() {
             </div>
           </form>
         )}
-        {!enrolling && mfaErr && <div className="alert alert--error u-mt-3">{mfaErr}</div>}
+        {!enrolling && mfaErr && <div role="alert" className="alert alert--error u-mt-3">{mfaErr}</div>}
       </div>
 
       <div className="card u-mt-5">
@@ -442,7 +442,7 @@ export default function SettingsPage() {
           <input id="delete-confirm" className="input" value={deleteConfirmText}
                  onChange={(e) => setDeleteConfirmText(e.target.value)} placeholder="DELETE" />
         </div>
-        {deleteError && <div className="alert alert--error u-mb-4">{deleteError}</div>}
+        {deleteError && <div role="alert" className="alert alert--error u-mb-4">{deleteError}</div>}
         <button
           className="btn"
           style={{ background: 'var(--error)', color: '#fff' }}

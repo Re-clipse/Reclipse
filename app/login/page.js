@@ -206,7 +206,7 @@ function LoginInner() {
                      onChange={(e) => setMfaCode(e.target.value.replace(/\D/g, ''))}
                      placeholder="123456" />
             </div>
-            {error && <div className="alert alert--error">{error}</div>}
+            {error && <div role="alert" className="alert alert--error">{error}</div>}
             <button type="submit" className="btn btn--primary btn--block btn--lg" disabled={loading}>
               {loading && <span className="spinner" />}
               {loading ? 'Verifying…' : 'Verify'}
@@ -288,7 +288,7 @@ function LoginInner() {
             </button>
           )}
 
-          {error && <div className="alert alert--error">{error}</div>}
+          {error && <div role="alert" className="alert alert--error">{error}</div>}
           {notice && <div className="alert alert--note">{notice}</div>}
 
           <button type="submit" className="btn btn--primary btn--block btn--lg"

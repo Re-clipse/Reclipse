@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 
@@ -28,6 +28,8 @@ export default function CommandBar() {
   const [help, setHelp] = useState(false);
   const [q, setQ] = useState('');
   const [authed, setAuthed] = useState(false);
+  const dialogRef = useRef(null);
+  const restoreTo = useRef(null);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setAuthed(!!data.session));
@@ -48,6 +50,33 @@ export default function CommandBar() {
     return () => window.removeEventListener('keydown', onKey);
   }, [authed]);
 
+  // Focus trap + restore, same pattern as components/Modal.js — this
+  // overlay had neither, so Tab could reach the covered page behind it and
+  // focus never returned to whatever opened it.
+  useEffect(() => {
+    if (!open && !help) return;
+    restoreTo.current = document.activeElement;
+    const focusables = () =>
+      dialogRef.current?.querySelectorAll(
+        'button, [href], input, textarea, select, [tabindex]:not([tabindex="-1"])'
+      ) || [];
+    setTimeout(() => { (focusables()[0] || dialogRef.current)?.focus(); }, 0);
+
+    function onKey(e) {
+      if (e.key !== 'Tab') return;
+      const f = Array.from(focusables());
+      if (!f.length) return;
+      const first = f[0], last = f[f.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    }
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      restoreTo.current?.focus?.();
+    };
+  }, [open, help]);
+
   const results = useMemo(() => {
     const needle = q.trim().toLowerCase();
     return NAV.filter(([label]) => !needle || label.toLowerCase().includes(needle));
@@ -59,7 +88,9 @@ export default function CommandBar() {
 
   return (
     <div className="cmd-bg" onClick={() => { setOpen(false); setHelp(false); }}>
-      <div className="cmd" onClick={(e) => e.stopPropagation()}>
+      <div className="cmd" ref={dialogRef} role="dialog" aria-modal="true"
+           aria-label={open ? 'Quick navigation' : 'Keyboard shortcuts'} tabIndex={-1}
+           onClick={(e) => e.stopPropagation()}>
         {open ? (
           <>
             <input className="cmd__input" autoFocus placeholder="Jump to…" value={q}
