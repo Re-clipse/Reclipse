@@ -10,7 +10,12 @@ import { signUnsubscribeToken } from '@/lib/emailToken';
 // Uses the admin client deliberately: a cron job isn't "someone", so RLS
 // can't be the authorization boundary — the WHERE clauses (and the per-user
 // email prefs below) are.
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://reclipsed.netlify.app';
+// reclipsed.netlify.app is a separate marketing page, deliberately left out of
+// sync with the app (see REDESIGN_LOG.md) — never a safe fallback for links
+// inside a reminder email. Falling back to the same localhost default
+// .env.example uses means a missing env var breaks obviously in dev instead
+// of silently sending students to the wrong site in production.
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
 const FROM = 'Reclipse <onboarding@resend.dev>';
 const TYPE_LABEL = { exam: 'Exam', quiz: 'Quiz', lab: 'Lab', assignment: 'Assignment', other: 'Date' };
 
