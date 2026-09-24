@@ -38,12 +38,13 @@ export default function PrivacyPage() {
               timestamps — used to schedule spaced repetition and show your progress.</li>
             <li><strong>Preferences:</strong> your timezone and which reminder emails you want, so we
               send them at sensible times and only the ones you asked for.</li>
-            <li><strong>Payment status:</strong> if you subscribe to Campus Archive, we store whether
-              your subscription is active and when it renews. We do not store your card number —
-              Stripe handles that directly.</li>
+            <li><strong>Payment status:</strong> if you subscribe to Campus Archive (our paid tier that
+              unlocks every archived deck), we store whether your subscription is active and when it
+              renews. We do not store your card number — Stripe handles that directly.</li>
           </ul>
           <p>We don&apos;t collect anything beyond what the features above need, and we don&apos;t run
-            ads, analytics, or tracking pixels of any kind.</p>
+            ads, analytics, or tracking scripts of any kind — see our <a href="/cookies">Cookie Policy</a>{' '}
+            for the full picture of what runs in your browser.</p>
         </section>
 
         <section>
@@ -51,9 +52,9 @@ export default function PrivacyPage() {
           <p>We share data with a small number of service providers, only for what they each need to do:</p>
           <ul>
             <li><strong>Supabase</strong> — hosts our database and handles login. Sees everything above.</li>
-            <li><strong>Anthropic (Claude)</strong> — receives the notes/text/images you upload and your
-              syllabus text, to generate flashcards, quizzes, and study tips. Does not receive your
-              email, password, or payment information.</li>
+            <li><strong>Anthropic (Claude, the AI that generates your flashcards)</strong> — receives the
+              notes/text/images you upload and your syllabus text, to generate flashcards, quizzes, and
+              study tips. Does not receive your email, password, or payment information.</li>
             <li><strong>Stripe</strong> — processes payment for the Campus Archive subscription. Receives
               your email and payment details directly; we never see your full card number.</li>
             <li><strong>Resend</strong> — delivers the emails you&apos;ve opted into (exam reminders,
@@ -66,9 +67,9 @@ export default function PrivacyPage() {
         <section>
           <h2>Cookies and local storage</h2>
           <p>
-            Reclipse doesn&apos;t set cookies. Your login session is kept in your browser&apos;s local
-            storage so you stay signed in — this is strictly necessary for the app to work and isn&apos;t
-            used for tracking.
+            We don&apos;t use cookies; your login session and a few preferences are kept in your
+            browser&apos;s local storage instead. See our <a href="/cookies">Cookie Policy</a> for
+            exactly what&apos;s stored and why.
           </p>
         </section>
 

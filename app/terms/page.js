@@ -28,8 +28,8 @@ export default function TermsPage() {
             You own the notes, decks, flashcards, and quizzes you create. By uploading content, you
             give us permission to process it (including sending it to our AI provider) to generate
             your study materials. If you choose to make a deck public — sharing it, listing it on
-            Discover, or adding it to Campus Archive — other students will be able to see and study
-            from it.
+            Discover (our public deck browser), or adding it to Campus Archive — other students will
+            be able to see and study from it.
           </p>
           <p>
             Don&apos;t upload content you don&apos;t have the right to share, or anything that infringes
@@ -49,19 +49,18 @@ export default function TermsPage() {
         <section>
           <h2>Campus Archive subscription</h2>
           <p>
-            Campus Archive is a monthly subscription that unlocks every archived deck. You can cancel
-            anytime from the &quot;Manage membership&quot; link in Archive, which opens Stripe&apos;s
-            billing portal directly — see our <a href="/refund">Refund Policy</a> for what happens to
-            billing when you cancel.
+            Campus Archive is a monthly subscription that unlocks every archived deck. See our{' '}
+            <a href="/refund">Refund Policy</a> for how to cancel and what happens to billing when you do.
           </p>
         </section>
 
         <section>
           <h2>Referrals</h2>
           <p>
-            Referral rewards are a discount off a future month for both sides, issued once the referred
-            account becomes a paying subscriber. Rewards are never cash and can&apos;t be redeemed for
-            anything other than a Reclipse subscription discount.
+            If you refer a friend and they sign up using your code or link, you both get a reward once
+            they become a paying Campus Archive subscriber: a discount off a future month, for both of
+            you. Rewards are never cash and can&apos;t be redeemed for anything other than a Reclipse
+            subscription discount.
           </p>
         </section>
 
@@ -69,8 +68,9 @@ export default function TermsPage() {
           <h2>Acceptable use</h2>
           <p>
             Don&apos;t use Reclipse to harass anyone, upload malicious files, attempt to access another
-            student&apos;s account, or try to circumvent the daily/monthly generation limits or payment
-            system. We can suspend or terminate accounts that violate these terms.
+            student&apos;s account, or try to circumvent the daily/monthly generation limits (the caps
+            on how many flashcard sets you can create) or payment system. We can suspend or terminate
+            accounts that violate these terms.
           </p>
         </section>
 
@@ -79,8 +79,8 @@ export default function TermsPage() {
           <p>
             Reclipse is provided &quot;as is.&quot; We don&apos;t guarantee it will be error-free or
             available at all times. To the extent allowed by law, we aren&apos;t liable for indirect or
-            consequential damages arising from your use of the app, including exam outcomes based on
-            AI-generated study material.
+            consequential damages — for example, a bad grade or lost study time — arising from your
+            use of the app, including exam outcomes based on AI-generated study material.
           </p>
         </section>
 

@@ -1,4 +1,5 @@
 import { Suspense } from 'react';
+import { Inter } from 'next/font/google';
 import './globals.css';
 import Nav from '@/components/Nav';
 import AmbientBg from '@/components/AmbientBg';
@@ -23,6 +24,12 @@ export const viewport = {
   themeColor: '#6D28D9',
 };
 
+// Self-hosted at build time via next/font — no runtime request to Google's
+// servers (and no visitor IP/user-agent sent there on every page load, which
+// the old <link> tags below did). This is also what makes the Privacy and
+// Cookie policies' "only four third parties" claim actually true.
+const inter = Inter({ subsets: ['latin'], weight: ['400', '500', '600', '700', '800'], display: 'swap' });
+
 // Applied before paint so dark-mode users never see a white flash.
 const themeScript = `
 (function () {
@@ -38,14 +45,8 @@ export default function RootLayout({ children }) {
     <html lang="en">
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
-          rel="stylesheet"
-        />
       </head>
-      <body>
+      <body className={inter.className}>
         <CelebrateProvider>
         <ToastProvider>
           <AmbientBg />

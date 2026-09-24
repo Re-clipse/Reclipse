@@ -18,13 +18,15 @@ export default function RefundPage() {
         <section>
           <h2>Campus Archive subscription</h2>
           <p>
-            Campus Archive is billed monthly. You can cancel anytime from Archive&apos;s
-            &quot;Manage membership&quot; link, which takes you to Stripe&apos;s billing portal.
+            Campus Archive (our paid subscription that unlocks every archived deck) is billed monthly.
+            You can cancel anytime from Archive&apos;s &quot;Manage membership&quot; link, which takes
+            you to Stripe&apos;s billing portal.
           </p>
           <p>
-            Cancelling stops future billing, but you keep access until the end of the period you&apos;ve
-            already paid for. We don&apos;t provide partial refunds for time remaining in a billing
-            period, except where required by law.
+            Cancelling stops future billing. In the usual case you keep access through the end of the
+            period you&apos;ve already paid for, per our current billing settings — if that ever isn&apos;t
+            how it works when you cancel, contact us. Either way, we don&apos;t provide partial refunds
+            for time remaining in a billing period, except where required by law.
           </p>
         </section>
 
@@ -39,8 +41,8 @@ export default function RefundPage() {
         <section>
           <h2>Referral discounts</h2>
           <p>
-            Referral rewards are a percentage discount applied to a future month&apos;s bill, not a cash
-            refund, and can&apos;t be exchanged for one.
+            Referral rewards are a discount, not a cash refund, and aren&apos;t eligible for one — see
+            our <a href="/terms">Terms</a> for how rewards are earned and issued.
           </p>
         </section>
       </div>

@@ -24,9 +24,12 @@ export default function CookiesPage() {
         <section>
           <h2>What we do use</h2>
           <p>
-            Your browser&apos;s local storage keeps you signed in between visits and remembers your
-            light/dark theme preference. This stays on your device, is strictly necessary for the app
-            to function, and isn&apos;t used to track you across other sites.
+            Your browser&apos;s local storage — not a cookie, and not sent to us automatically the way a
+            cookie is — holds a few small things: your sign-in session, your light/dark theme choice, a
+            friend&apos;s referral code if you followed an invite link before signing up, your sound
+            on/off preference, and your study streak/progress stats for the in-app achievements. All of
+            it stays on your device, is strictly necessary for the app to function or remember a choice
+            you made, and isn&apos;t used to track you across other sites.
           </p>
         </section>
 
