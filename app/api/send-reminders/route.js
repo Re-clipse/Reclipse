@@ -45,15 +45,20 @@ export async function GET(request) {
 // ---------- 1. Exam/quiz/lab/assignment reminders ----------
 async function sendExamReminders(admin, profileFor) {
   const MAX_WINDOW_DAYS = 7; // the widest of the three reminder_days_ahead choices
-  const windowEnd = new Date();
-  windowEnd.setDate(windowEnd.getDate() + MAX_WINDOW_DAYS);
+
+  // A student's local "today" can be a day ahead of or behind server UTC, so
+  // the SQL-level bounds must be a superset of every timezone's true window
+  // — the same approach as sendStudySessionReminders below. The per-user
+  // daysOut check (and the daysOut < 0 guard) is what actually decides.
+  const windowStart = new Date(); windowStart.setDate(windowStart.getDate() - 1);
+  const windowEnd = new Date(); windowEnd.setDate(windowEnd.getDate() + MAX_WINDOW_DAYS + 1);
 
   const { data: events } = await admin
     .from('course_events')
     .select('id, title, event_date, event_type, user_id, course_id, courses(name, remind_enabled)')
     .is('reminder_sent_at', null)
     .lte('event_date', windowEnd.toISOString().slice(0, 10))
-    .gte('event_date', new Date().toISOString().slice(0, 10));
+    .gte('event_date', windowStart.toISOString().slice(0, 10));
 
   let sent = 0;
   for (const ev of events || []) {
@@ -63,7 +68,7 @@ async function sendExamReminders(admin, profileFor) {
 
     const { date: today } = localToday(profile.timezone);
     const daysOut = Math.round((new Date(`${ev.event_date}T00:00:00Z`) - new Date(`${today}T00:00:00Z`)) / 86400000);
-    if (daysOut > profile.reminder_days_ahead) continue;
+    if (daysOut < 0 || daysOut > profile.reminder_days_ahead) continue;
 
     const email = await getEmail(admin, ev.user_id);
     if (!email) continue;
