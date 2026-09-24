@@ -180,7 +180,7 @@ export default function Home() {
             </a>
           </div>
           <div className="lp-science__art">
-            <Mascot mood="thinking" size={220} float />
+            <Mascot mood="thinking" size={240} full float />
           </div>
         </div>
       </section>
@@ -195,7 +195,7 @@ export default function Home() {
               {signedIn ? 'Create a study set' : 'Get started free'} &rarr;
             </a>
           </div>
-          <div className="lp-cta__luna"><Mascot mood="celebrate" size={168} float /></div>
+          <div className="lp-cta__luna"><Mascot mood="celebrate" size={190} full float /></div>
         </div>
       </section>
     </>

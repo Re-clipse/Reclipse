@@ -158,7 +158,7 @@ function QuizInner() {
           <div className="progress u-mb-6"><div className="progress__bar" style={{ width: '100%' }} /></div>
           <div className="card center animate-in u-p-7">
             <div className="mascot-wrap">
-              <Mascot mood="excited" size={120} bounce />
+              <Mascot mood="excited" size={140} full bounce />
             </div>
             <span className="badge">Step 3 of 3: complete</span>
             <h1 style={{ fontSize: 'var(--text-2xl)', marginTop: 'var(--s-4)' }}>You&apos;re all set</h1>
@@ -182,7 +182,7 @@ function QuizInner() {
       <main className="page page--narrow">
         <div className="card center animate-in u-p-7">
           <div className="mascot-wrap">
-            <Mascot mood={pct >= 70 ? 'excited' : 'determined'} size={110} bounce />
+            <Mascot mood={pct >= 70 ? 'excited' : 'determined'} size={130} full bounce />
           </div>
           <p className="muted small">You scored</p>
           <div className="score">{pct}%</div>

@@ -161,7 +161,7 @@ function StudyInner() {
       <main className="page page--narrow">
         <div className="card center animate-in" style={{ padding: 'var(--s-7)' }}>
           <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 'var(--s-2)' }}>
-            <Mascot mood="excited" size={120} bounce />
+            <Mascot mood="excited" size={140} full bounce />
           </div>
           <h1 style={{ fontSize: 'var(--text-2xl)' }}>Session complete</h1>
           <p className="muted" style={{ marginTop: 'var(--s-3)' }}>

@@ -181,7 +181,7 @@ function LoginInner() {
           <p className="auth__pitch">Turn your lecture notes into flashcards and quizzes that make studying actually stick.</p>
           <div className="auth__luna">
             <div className="auth__glow" aria-hidden="true" />
-            <Mascot mood={isSignup ? 'excited' : 'happy'} size={190} float />
+            <Mascot mood={isSignup ? 'excited' : 'happy'} size={210} full float />
           </div>
           <ul className="auth__points">
             {['Snap a photo of your notes', 'Cards in seconds', 'Spaced repetition built in'].map((t) => (
