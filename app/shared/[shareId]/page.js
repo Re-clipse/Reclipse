@@ -21,7 +21,7 @@ export default function SharedDeckPage() {
     (async () => {
       // Readable without login: RLS allows select where is_public = true.
       const { data: d } = await supabase.from('decks')
-        .select('id, title, summary, is_public').eq('share_id', shareId).maybeSingle();
+        .select('id, title, summary, is_public').eq('share_id', shareId).is('deleted_at', null).maybeSingle();
       if (!d || !d.is_public) { setStatus('missing'); return; }
       // Only a 5-card preview is fetched here — the "+N more, save to unlock"
       // gate below would otherwise be purely visual, since the full answers

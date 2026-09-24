@@ -45,6 +45,7 @@ export default function ExamPage() {
     setDecksFailed(false);
     supabase.from('decks')
       .select('id, title, quiz_questions(count)')
+      .is('deleted_at', null)
       .order('created_at', { ascending: false })
       .then(({ data, error }) => {
         if (error) { setDecksFailed(true); return; }

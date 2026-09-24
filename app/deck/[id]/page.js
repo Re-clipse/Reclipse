@@ -181,6 +181,18 @@ export default function DeckPage() {
     setDeck((d) => ({ ...d, title }));
   }
 
+  async function restoreDeck() {
+    await supabase.from('decks').update({ deleted_at: null }).eq('id', id);
+    setDeck((d) => ({ ...d, deleted_at: null }));
+    toast('Deck restored', 'success');
+  }
+
+  async function destroyDeckForever() {
+    if (!confirm(`Permanently delete "${deck.title}"? This can't be undone.`)) return;
+    await supabase.from('decks').delete().eq('id', id);
+    router.push('/decks');
+  }
+
   if (authLoading || status === 'loading') {
     return <main className="page"><div className="skeleton" style={{ height: 400 }} /></main>;
   }
@@ -192,6 +204,22 @@ export default function DeckPage() {
       <main className="page"><div className="empty">
         <h3>Deck not found</h3><p>It may have been deleted.</p>
         <a href="/decks" className="btn btn--primary">Back to my decks</a>
+      </div></main>
+    );
+  }
+  if (deck.deleted_at) {
+    return (
+      <main className="page"><div className="empty">
+        <h3>&quot;{deck.title}&quot; is in Trash</h3>
+        <p>
+          Deleted {new Date(deck.deleted_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}.
+          It&apos;ll be permanently removed 30 days after that unless you restore it.
+        </p>
+        <div className="row actions-sm-stack u-row-center">
+          <button className="btn btn--primary" onClick={restoreDeck}>Restore</button>
+          <button className="btn" style={{ color: 'var(--error)' }} onClick={destroyDeckForever}>Delete forever</button>
+          <a href="/decks" className="btn btn--ghost">Back to my decks</a>
+        </div>
       </div></main>
     );
   }

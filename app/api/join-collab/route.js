@@ -17,7 +17,7 @@ export async function POST(request) {
 
   const admin = supabaseAdmin();
   const { data: deck, error: deckError } = await admin
-    .from('decks').select('id, title, collab_enabled').eq('collab_id', collabId).maybeSingle();
+    .from('decks').select('id, title, collab_enabled').eq('collab_id', collabId).is('deleted_at', null).maybeSingle();
 
   if (deckError || !deck || !deck.collab_enabled) {
     return Response.json({ error: 'This collaboration link is invalid or has been turned off.' }, { status: 404 });

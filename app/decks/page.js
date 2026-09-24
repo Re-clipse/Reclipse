@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { useAuth } from '@/lib/useAuth';
+import { useToast } from '@/components/Toast';
 import { streakFrom } from '@/lib/stats';
 import { cardsToday } from '@/lib/rewards';
 import { GoalRing } from '@/components/Rewards';
@@ -18,6 +19,7 @@ const ACCENT_CYCLE = ['green', 'blue', 'amber', 'pink', 'teal', 'orange', 'indig
 
 export default function DecksPage() {
   const { user, loading: authLoading } = useAuth();
+  const toast = useToast();
   const [decks, setDecks] = useState(null);
   const [courses, setCourses] = useState([]);
   const [due, setDue] = useState(0);
@@ -32,6 +34,8 @@ export default function DecksPage() {
   const [nextExam, setNextExam] = useState(null);
   const [todaySessions, setTodaySessions] = useState([]);
   const [contentMatches, setContentMatches] = useState(null); // deck ids matching card content, or null when not searching
+  const [showTrash, setShowTrash] = useState(false);
+  const [trashed, setTrashed] = useState(null); // null = not loaded yet
 
   const load = useCallback(async () => {
     if (!user) return;
@@ -41,6 +45,7 @@ export default function DecksPage() {
       const [decksRes, coursesRes, dueRes, sessRes, progRes, examRes, planRes] = await withTimeout(Promise.all([
         supabase.from('decks')
           .select('id, title, created_at, course_id, is_public, flashcards(count), quiz_questions(count)')
+          .is('deleted_at', null)
           .order('created_at', { ascending: false }),
         supabase.from('courses').select('*').order('name'),
         supabase.from('card_progress').select('flashcard_id', { count: 'exact', head: true })
@@ -111,10 +116,33 @@ export default function DecksPage() {
   }
 
   async function remove(id, title) {
-    if (!confirm(`Delete "${title}"? This removes its flashcards and quiz too.`)) return;
+    if (!confirm(`Delete "${title}"? You can undo this or restore it from Trash for 30 days.`)) return;
     setDecks((d) => d.filter((x) => x.id !== id));
+    const { error } = await supabase.from('decks').update({ deleted_at: new Date().toISOString() }).eq('id', id);
+    if (error) { setError("That deck couldn't be deleted."); load(); return; }
+    toast(`"${title}" deleted`, 'info', { duration: 6000, action: { label: 'Undo', onClick: () => restore(id) } });
+  }
+
+  async function restore(id) {
+    const { error } = await supabase.from('decks').update({ deleted_at: null }).eq('id', id);
+    if (error) { toast('Could not restore that deck', 'error'); return; }
+    setTrashed((t) => (t ? t.filter((x) => x.id !== id) : t));
+    load();
+    toast('Deck restored', 'success');
+  }
+
+  async function destroyForever(id, title) {
+    if (!confirm(`Permanently delete "${title}"? This can't be undone.`)) return;
+    setTrashed((t) => t.filter((x) => x.id !== id));
     const { error } = await supabase.from('decks').delete().eq('id', id);
-    if (error) { setError("That deck couldn't be deleted."); load(); }
+    if (error) toast('Could not delete that deck', 'error');
+  }
+
+  async function openTrash() {
+    setShowTrash(true);
+    const { data } = await supabase.from('decks')
+      .select('id, title, deleted_at').not('deleted_at', 'is', null).order('deleted_at', { ascending: false });
+    setTrashed(data || []);
   }
 
   const visible = useMemo(() => {
@@ -213,6 +241,7 @@ export default function DecksPage() {
                  onChange={(e) => setQ(e.target.value)} />
         </div>
         <button className="btn btn--ghost" onClick={() => setShowCourse(true)}>+ Course</button>
+        <button className="btn btn--ghost" onClick={openTrash}>Trash</button>
       </div>
 
       {courses.length > 0 && (
@@ -316,6 +345,35 @@ export default function DecksPage() {
               <button type="button" className="btn btn--ghost" onClick={() => setShowCourse(false)}>Cancel</button>
             </div>
           </form>
+        </Modal>
+      )}
+
+      {showTrash && (
+        <Modal title="Trash" onClose={() => setShowTrash(false)}>
+          <div className="stack">
+            <p className="small muted">Deleted decks stay here for 30 days before they&apos;re permanently removed.</p>
+            {trashed === null ? (
+              <div className="skeleton" style={{ height: 80 }} />
+            ) : trashed.length === 0 ? (
+              <p className="small muted">Nothing in the trash.</p>
+            ) : (
+              trashed.map((d) => (
+                <div key={d.id} className="row row--between" style={{ alignItems: 'center' }}>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontWeight: 600 }}>{d.title}</div>
+                    <div className="small muted">
+                      Deleted {new Date(d.deleted_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                    </div>
+                  </div>
+                  <div className="row" style={{ flex: 'none' }}>
+                    <button className="btn btn--ghost" onClick={() => restore(d.id)}>Restore</button>
+                    <button className="btn btn--ghost" style={{ color: 'var(--error)' }}
+                            onClick={() => destroyForever(d.id, d.title)}>Delete forever</button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
         </Modal>
       )}
     </main>

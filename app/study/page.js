@@ -54,7 +54,7 @@ function StudyInner() {
       } else {
         if (!deckId) { setStatus('empty'); return; }
         const [{ data: d }, { data: c }] = await Promise.all([
-          supabase.from('decks').select('*').eq('id', deckId).maybeSingle(),
+          supabase.from('decks').select('*').eq('id', deckId).is('deleted_at', null).maybeSingle(),
           supabase.from('flashcards').select('*').eq('deck_id', deckId).order('created_at'),
         ]);
         if (!d) { setStatus('error'); return; }

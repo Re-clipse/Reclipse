@@ -83,7 +83,8 @@ export async function POST(request) {
   const { data: decks } = await supabase
     .from('decks')
     .select('id, title, flashcards(id)')
-    .eq('course_id', event.course_id);
+    .eq('course_id', event.course_id)
+    .is('deleted_at', null);
 
   const deckByFlashcard = new Map();
   for (const d of decks || []) for (const f of d.flashcards || []) deckByFlashcard.set(f.id, d.id);

@@ -37,7 +37,7 @@ function QuizInner() {
     (async () => {
       try {
         const [{ data: d }, { data: q }] = await withTimeout(Promise.all([
-          supabase.from('decks').select('*').eq('id', deckId).maybeSingle(),
+          supabase.from('decks').select('*').eq('id', deckId).is('deleted_at', null).maybeSingle(),
           supabase.from('quiz_questions').select('*').eq('deck_id', deckId),
         ]), 12000, 'quiz');
         if (!d) { setStatus('error'); return; }

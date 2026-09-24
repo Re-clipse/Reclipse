@@ -8,10 +8,10 @@ export const useToast = () => useContext(ToastCtx);
 export function ToastProvider({ children }) {
   const [toasts, setToasts] = useState([]);
 
-  const toast = useCallback((message, kind = 'info') => {
+  const toast = useCallback((message, kind = 'info', opts = {}) => {
     const id = Math.random().toString(36).slice(2);
-    setToasts((t) => [...t, { id, message, kind }]);
-    setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), 3200);
+    setToasts((t) => [...t, { id, message, kind, action: opts.action }]);
+    setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), opts.duration ?? 3200);
   }, []);
 
   return (
@@ -29,6 +29,12 @@ export function ToastProvider({ children }) {
                    strokeLinecap="round"><path d="M18 6 6 18M6 6l12 12" /></svg>
             )}
             <span>{t.message}</span>
+            {t.action && (
+              <button type="button" className="toast__action" onClick={() => {
+                t.action.onClick();
+                setToasts((ts) => ts.filter((x) => x.id !== t.id));
+              }}>{t.action.label}</button>
+            )}
           </div>
         ))}
       </div>
