@@ -157,9 +157,14 @@ export default function DecksPage() {
       {(nextExam || todaySessions.length > 0) && (
         <div className="card today-card u-mb-5">
           <div style={{ fontWeight: 650, marginBottom: 'var(--s-2)' }}>Today</div>
+          {todaySessions.length > 0 && (
+            <p className="small muted" style={{ marginBottom: 'var(--s-2)' }}>
+              Study plan — sessions we auto-scheduled leading up to your upcoming exams.
+            </p>
+          )}
           {todaySessions.map((s) => (
             <div key={s.id} className="today-card__row">
-              <span className="badge badge--accent">Study plan</span>
+              <span className="badge badge--accent" title="Auto-scheduled review based on your upcoming exams">Study plan</span>
               <div>
                 <div style={{ fontWeight: 600 }}>{s.decks?.title || s.course_events?.title || 'Study session'}</div>
                 {s.tip && <p className="small muted">{s.tip}</p>}

@@ -7,7 +7,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { withTimeout } from '@/lib/net';
 import Mascot from '@/components/Mascot';
 import LoadError from '@/components/LoadError';
-import { hasArchiveAccess, startArchiveCheckout, openBillingPortal } from '@/lib/archive';
+import { hasArchiveAccess, startArchiveCheckout, openBillingPortal, getArchivePrice, formatArchivePrice } from '@/lib/archive';
 
 // "BI110 — Cell Biology" -> { code: 'BI110', name: 'Cell Biology' }
 function splitCourse(label) {
@@ -21,6 +21,7 @@ export default function ArchivePage() {
   const [error, setError] = useState('');
   const [member, setMember] = useState(null);
   const [busy, setBusy] = useState(false);
+  const [price, setPrice] = useState(null);
   const router = useRouter();
 
   async function load(query) {
@@ -39,6 +40,7 @@ export default function ArchivePage() {
 
   useEffect(() => { load(''); }, []);
   useEffect(() => { hasArchiveAccess().then(setMember).catch(() => setMember(false)); }, []);
+  useEffect(() => { getArchivePrice().then(setPrice); }, []);
 
   async function membershipAction(fn) {
     setError(''); setBusy(true);
@@ -67,18 +69,22 @@ export default function ArchivePage() {
   return (
     <main className="page page--wide">
       <PageHeader accent="amber" icon={ICONS.archive} title="Campus Archive"
-        subtitle="Complete study sets for specific courses, made by students who already sat the exams." />
+        subtitle="Complete study sets for specific courses, shared by other students taking (or who've taken) them." />
 
       {member === false && (
         <div className="card member-card">
           <Mascot mood="happy" size={64} />
           <div className="member-card__text">
             <strong>Study every set in the archive</strong>
-            <p className="small muted">One monthly membership unlocks all the flashcards and quizzes below. Cancel any time.</p>
+            <p className="small muted">
+              {price ? `${formatArchivePrice(price)} unlocks` : 'One monthly membership unlocks'} all the
+              flashcards and quizzes below. Cancel any time — you keep access through the end of the
+              period you&apos;ve already paid for.
+            </p>
           </div>
           <button className="btn btn--page" disabled={busy}
                   style={{ '--pa': ACCENTS.amber.solid }} onClick={() => membershipAction(() => startArchiveCheckout())}>
-            {busy ? 'Opening…' : 'Get access'}
+            {busy ? 'Opening…' : price ? `Get access — ${formatArchivePrice(price)}` : 'Get access'}
           </button>
         </div>
       )}
@@ -136,7 +142,7 @@ export default function ArchivePage() {
               </div>
               <div className="shelf__scroll">
                 {sh.items.map((d, i) => {
-                  const popular = topActivity > 0 && d.activity === topActivity;
+                  const popular = sh.best > 0 && d.activity === sh.best;
                   return (
                     <a key={d.id} href={`/archive/${d.id}`} className="card card--link shelf-tile rise"
                        style={{ animationDelay: `${Math.min(si * 3 + i, 10) * 40}ms` }}>

@@ -16,7 +16,11 @@ const MAX_INPUT_CHARS = 24000;
 // Set GENERATION_MODEL to trade cost for quality (e.g. claude-sonnet-5) without a code change.
 const MODEL = process.env.GENERATION_MODEL || 'claude-haiku-4-5-20251001';
 const DAILY_GENERATION_LIMIT = Number(process.env.DAILY_GENERATION_LIMIT || 5);
-// Keeps per-user AI spend to roughly $1/month even at worst-case token usage (see lib/generationPrompt.js).
+// Cost cap. At Haiku 4.5 pricing ($1/$5 per MTok in/out), one call is roughly
+// (~1.4k system prompt + up to 6k notes) * $1/MTok + up to 9k max_tokens output
+// * $5/MTok =~ $0.05; the one-retry-on-bad-parse path below can double that.
+// So 30 generations/month lands around $1.50-3/user/month at worst case, not
+// $1 — re-check this arithmetic if MODEL, max_tokens, or this limit change.
 const MONTHLY_GENERATION_LIMIT = Number(process.env.MONTHLY_GENERATION_LIMIT || 30);
 
 export async function POST(request) {
@@ -28,7 +32,7 @@ export async function POST(request) {
   }
 
   // Daily and monthly caps, checked before we spend anything on the API call.
-  // Daily guards against a burst; monthly is the real cost cap (~$1/user/month at worst case).
+  // Daily guards against a burst; monthly is the real cost cap (see the arithmetic above).
   const today = new Date().toISOString().slice(0, 10);
   const monthStart = `${today.slice(0, 7)}-01`;
   const { data: usageRows } = await supabase

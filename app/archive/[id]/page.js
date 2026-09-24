@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
 import { supabase } from '@/lib/supabaseClient';
-import { hasArchiveAccess, startArchiveCheckout } from '@/lib/archive';
+import { hasArchiveAccess, startArchiveCheckout, getArchivePrice, formatArchivePrice } from '@/lib/archive';
 
 function ArchiveDeckInner() {
   const { id } = useParams();
@@ -17,6 +17,7 @@ function ArchiveDeckInner() {
   const [status, setStatus] = useState('loading');
   const [subscribing, setSubscribing] = useState(false);
   const [error, setError] = useState('');
+  const [price, setPrice] = useState(null);
 
   const load = useCallback(async () => {
     // Preview is a capped RPC — never the full deck. Safe for logged-out users.
@@ -43,6 +44,7 @@ function ArchiveDeckInner() {
   }, [id]);
 
   useEffect(() => { load(); }, [load]);
+  useEffect(() => { getArchivePrice().then(setPrice); }, []);
 
   // Stripe's webhook may land a moment after the success redirect, so re-check
   // briefly rather than telling a paying user they don't have access yet.
@@ -102,16 +104,17 @@ function ArchiveDeckInner() {
             )}
             <p className="muted u-mt-4">
               Campus Archive members can study every archived deck: all the flashcards and practice
-              quizzes, made by students who already took the course.
+              quizzes, shared by other students taking (or who&apos;ve taken) the course.
             </p>
             {error && <div className="alert alert--error u-mt-4">{error}</div>}
-            <button className="btn btn--primary btn--block btn--lg u-mt-5" 
+            <button className="btn btn--primary btn--block btn--lg u-mt-5"
                     onClick={subscribe} disabled={subscribing}>
               {subscribing && <span className="spinner" />}
-              {subscribing ? 'Opening checkout…' : 'Subscribe to unlock'}
+              {subscribing ? 'Opening checkout…' : price ? `Subscribe — ${formatArchivePrice(price)}` : 'Subscribe to unlock'}
             </button>
             <p className="small muted center u-mt-3">
-              Monthly membership · cancel any time
+              {price ? formatArchivePrice(price) : 'Monthly membership'} · cancel any time, access continues
+              to the end of the period you&apos;ve paid for
             </p>
           </>
         )}

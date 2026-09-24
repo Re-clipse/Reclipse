@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import Mascot from '@/components/Mascot';
 import { GoalRing } from '@/components/Rewards';
+import { getArchivePrice, formatArchivePrice } from '@/lib/archive';
 
 function Icon({ path }) {
   return (
@@ -14,10 +15,12 @@ function Icon({ path }) {
 
 export default function Home() {
   const [signedIn, setSignedIn] = useState(false);
+  const [price, setPrice] = useState(null);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setSignedIn(!!data.session));
   }, []);
+  useEffect(() => { getArchivePrice().then(setPrice); }, []);
 
   return (
     <>
@@ -68,20 +71,17 @@ export default function Home() {
         </div>
       </header>
 
-      {/* TRUST STRIP */}
+      {/* PRICING STRIP */}
       <div className="lp-strip">
         <div className="lp-strip__inner">
-          {[
-            [<><rect x="3" y="3" width="18" height="18" rx="2"/><path d="m9 12 2 2 4-4"/></>, 'Snap a photo of your notes'],
-            [<><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8Z"/></>, 'Cards in seconds'],
-            [<><path d="M3 12a9 9 0 1 0 9-9"/><path d="M3 3v6h6"/></>, 'Spaced repetition built in'],
-            [<><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="0.5" fill="currentColor"/></>, 'Practice quizzes & mock exams'],
-          ].map(([icon, t]) => (
-            <div key={t} className="lp-strip__item">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">{icon}</svg>
-              {t}
-            </div>
-          ))}
+          <div className="lp-strip__item">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+            Notes to flashcards, spaced repetition, and mock exams — free
+          </div>
+          <div className="lp-strip__item">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="4" width="20" height="5" rx="1"/><path d="M4 9v9a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9"/></svg>
+            <a href="/archive">Campus Archive{price ? ` — ${formatArchivePrice(price)}` : ''}</a>: study sets shared by other students, optional
+          </div>
         </div>
       </div>
 
@@ -89,7 +89,7 @@ export default function Home() {
       <section className="section">
         <div className="section__inner">
           <div className="section__head">
-            <h2>Three steps. About a minute.</h2>
+            <h2>Three steps.</h2>
             <p>No new system to learn. Use the notes you already have.</p>
           </div>
           <div className="lp-steps lp-steps--line">
@@ -125,7 +125,7 @@ export default function Home() {
               <div className="lp-intervals">
                 <div className="lp-intervals__title">Review intervals</div>
                 <div className="lp-intervals__bars">
-                  {[['1d', 22], ['3d', 38], ['1w', 56], ['2w', 78], ['1mo', 100]].map(([l, h], i) => (
+                  {[['1d', 22], ['6d', 38], ['2w', 56], ['5w', 78], ['3mo', 100]].map(([l, h], i) => (
                     <div key={l} className="lp-intervals__col">
                       <div className="lp-intervals__bar" style={{ height: `${h}%`, opacity: 0.45 + i * 0.14 }} />
                       <span>{l}</span>
@@ -152,7 +152,10 @@ export default function Home() {
               <div className="lp-feature__icon"><Icon path={<><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></>} /></div>
               <div>
                 <h3>Exam reminders</h3>
-                <p>Upload your syllabus and we&apos;ll email you before each exam, quiz and lab.</p>
+                <p>
+                  <a href="/syllabus">Upload your syllabus</a> and we&apos;ll email you before each
+                  exam, quiz and lab.
+                </p>
               </div>
             </div>
           </div>

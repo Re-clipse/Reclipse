@@ -141,7 +141,8 @@ function UploadInner() {
           </div>
           <h2 style={{ fontSize: 'var(--text-xl)' }}>Building your study set</h2>
           <p className="working__step" style={{ marginTop: 'var(--s-3)' }}>
-            Reading your notes and writing scenario-based cards and a quiz. This can take up to about 30 seconds.
+            Reading your notes and writing scenario-based cards and a quiz. Usually well under a
+            minute, occasionally a bit longer if it needs a second pass.
           </p>
         </div>
       </main>
@@ -246,7 +247,7 @@ function UploadInner() {
             </button>
             <a href="/decks" className="btn btn--ghost btn--lg">Cancel</a>
           </div>
-          <p className="small muted">Up to 5 study sets per day.</p>
+          <p className="small muted">Up to 5 study sets per day — you&apos;ll get a clear message here if you hit the limit, and it resets the next day.</p>
         </form>
 
         <aside className="card up-side">
