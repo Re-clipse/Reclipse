@@ -215,13 +215,21 @@ function LoginInner() {
         </div>
       ) : (
       <div className="card animate-in auth__card">
-        <div className="seg" role="tablist" aria-label="Log in or sign up">
-          <button type="button" role="tab" aria-selected={!isSignup}
+        <div className="seg" role="tablist" aria-label="Log in or sign up"
+             onKeyDown={(e) => {
+               if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+               e.preventDefault();
+               chooseMode(isSignup ? 'login' : 'signup');
+             }}>
+          <button type="button" role="tab" id="auth-tab-login" aria-selected={!isSignup}
+                  aria-controls="auth-panel" tabIndex={!isSignup ? 0 : -1}
                   className={`seg__btn${!isSignup ? ' seg__btn--on' : ''}`} onClick={() => chooseMode('login')}>Log in</button>
-          <button type="button" role="tab" aria-selected={isSignup}
+          <button type="button" role="tab" id="auth-tab-signup" aria-selected={isSignup}
+                  aria-controls="auth-panel" tabIndex={isSignup ? 0 : -1}
                   className={`seg__btn${isSignup ? ' seg__btn--on' : ''}`} onClick={() => chooseMode('signup')}>Sign up</button>
         </div>
 
+        <div id="auth-panel" role="tabpanel" aria-labelledby={isSignup ? 'auth-tab-signup' : 'auth-tab-login'}>
         <div className="u-mb-5">
           <h2 className="auth__title">{isSignup ? 'Create your account' : 'Welcome back'}</h2>
           <p className="muted small u-mt-2">
@@ -297,6 +305,7 @@ function LoginInner() {
             {loading ? 'One moment…' : isSignup ? 'Create account' : 'Log in'}
           </button>
         </form>
+        </div>
 
         <p className="center small muted u-mt-5">
           {isSignup ? 'Already have an account?' : "Don't have an account yet?"}{' '}

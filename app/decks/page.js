@@ -31,6 +31,7 @@ export default function DecksPage() {
   const [showCourse, setShowCourse] = useState(false);
   const [nextExam, setNextExam] = useState(null);
   const [todaySessions, setTodaySessions] = useState([]);
+  const [contentMatches, setContentMatches] = useState(null); // deck ids matching card content, or null when not searching
 
   const load = useCallback(async () => {
     if (!user) return;
@@ -82,6 +83,23 @@ export default function DecksPage() {
 
   useEffect(() => { load(); }, [load]);
 
+  // Title search above is instant/client-side; this supplements it with a
+  // debounced server search over card contents (question/answer), so
+  // "mitochondria" finds a deck titled "BI110" if that's what's on a card.
+  // RLS already scopes flashcards to the signed-in user's own decks.
+  useEffect(() => {
+    const needle = q.trim();
+    if (needle.length < 2) { setContentMatches(null); return; }
+    const timer = setTimeout(async () => {
+      const { data } = await supabase.from('flashcards')
+        .select('deck_id')
+        .or(`question.ilike.%${needle}%,answer.ilike.%${needle}%`)
+        .limit(200);
+      setContentMatches(new Set((data || []).map((r) => r.deck_id)));
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [q]);
+
   async function addCourse(e) {
     e.preventDefault();
     const name = newCourse.trim();
@@ -105,10 +123,10 @@ export default function DecksPage() {
     return decks.filter((d) => {
       const okCourse = courseFilter === 'all'
         || (courseFilter === 'none' ? !d.course_id : d.course_id === courseFilter);
-      const okText = !needle || d.title.toLowerCase().includes(needle);
+      const okText = !needle || d.title.toLowerCase().includes(needle) || contentMatches?.has(d.id);
       return okCourse && okText;
     });
-  }, [decks, q, courseFilter]);
+  }, [decks, q, courseFilter, contentMatches]);
 
   if (authLoading) return <main className="page page--wide"><div className="skeleton" style={{ height: 300 }} /></main>;
 
@@ -191,7 +209,7 @@ export default function DecksPage() {
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" />
           </svg>
-          <input className="input" aria-label="Search decks" placeholder="Search decks…" value={q}
+          <input className="input" aria-label="Search decks and card contents" placeholder="Search decks and cards…" value={q}
                  onChange={(e) => setQ(e.target.value)} />
         </div>
         <button className="btn btn--ghost" onClick={() => setShowCourse(true)}>+ Course</button>

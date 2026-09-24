@@ -186,24 +186,33 @@ export default function CalendarPage() {
           </button>
         } />
 
-      <div className="tabs" role="tablist" aria-label="Calendar view" style={{ marginBottom: 'var(--s-4)' }}>
-        <button type="button" role="tab" aria-selected={view === 'month'}
+      <div className="tabs" role="tablist" aria-label="Calendar view" style={{ marginBottom: 'var(--s-4)' }}
+           onKeyDown={(e) => {
+             if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+             e.preventDefault();
+             setView((v) => (v === 'month' ? 'agenda' : 'month'));
+           }}>
+        <button type="button" role="tab" id="cal-tab-month" aria-selected={view === 'month'}
+                aria-controls="cal-panel" tabIndex={view === 'month' ? 0 : -1}
                 className={`tab${view === 'month' ? ' tab--on' : ''}`} onClick={() => setView('month')}>Month</button>
-        <button type="button" role="tab" aria-selected={view === 'agenda'}
+        <button type="button" role="tab" id="cal-tab-agenda" aria-selected={view === 'agenda'}
+                aria-controls="cal-panel" tabIndex={view === 'agenda' ? 0 : -1}
                 className={`tab${view === 'agenda' ? ' tab--on' : ''}`} onClick={() => setView('agenda')}>Agenda</button>
       </div>
 
-      {status === 'loading' ? (
-        <div className="skeleton" style={{ height: 420 }} />
-      ) : view === 'month' ? (
-        <MonthGrid
-          cursor={cursor} itemsByDate={itemsByDate} courseColor={courseColor} onSelect={setSelected}
-          onPrev={() => setCursor((c) => new Date(c.getFullYear(), c.getMonth() - 1, 1))}
-          onNext={() => setCursor((c) => new Date(c.getFullYear(), c.getMonth() + 1, 1))}
-          onToday={() => { const d = new Date(); setCursor(new Date(d.getFullYear(), d.getMonth(), 1)); }} />
-      ) : isEmpty ? null : (
-        <AgendaView itemsByDate={itemsByDate} courseColor={courseColor} onSelect={setSelected} />
-      )}
+      <div id="cal-panel" role="tabpanel" aria-labelledby={view === 'month' ? 'cal-tab-month' : 'cal-tab-agenda'}>
+        {status === 'loading' ? (
+          <div className="skeleton" style={{ height: 420 }} />
+        ) : view === 'month' ? (
+          <MonthGrid
+            cursor={cursor} itemsByDate={itemsByDate} courseColor={courseColor} onSelect={setSelected}
+            onPrev={() => setCursor((c) => new Date(c.getFullYear(), c.getMonth() - 1, 1))}
+            onNext={() => setCursor((c) => new Date(c.getFullYear(), c.getMonth() + 1, 1))}
+            onToday={() => { const d = new Date(); setCursor(new Date(d.getFullYear(), d.getMonth(), 1)); }} />
+        ) : isEmpty ? null : (
+          <AgendaView itemsByDate={itemsByDate} courseColor={courseColor} onSelect={setSelected} />
+        )}
+      </div>
 
       {isEmpty && (
         <div className="card center u-p-6 u-mt-5">

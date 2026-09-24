@@ -186,15 +186,26 @@ function UploadInner() {
             )}
           </div>
 
-          <div className="tabs" role="tablist" aria-label="How to add your notes">
-            <button type="button" role="tab" aria-selected={mode === 'file'}
+          <div className="tabs" role="tablist" aria-label="How to add your notes"
+               onKeyDown={(e) => {
+                 if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+                 e.preventDefault();
+                 setMode((m) => (m === 'file' ? 'paste' : 'file'));
+               }}>
+            <button type="button" role="tab" id="up-tab-file" aria-selected={mode === 'file'}
+                    aria-controls="up-drop" tabIndex={mode === 'file' ? 0 : -1}
                     className={`tab${mode === 'file' ? ' tab--on' : ''}`} onClick={() => setMode('file')}>Upload a file</button>
-            <button type="button" role="tab" aria-selected={mode === 'paste'}
+            <button type="button" role="tab" id="up-tab-paste" aria-selected={mode === 'paste'}
+                    aria-controls="notes" tabIndex={mode === 'paste' ? 0 : -1}
                     className={`tab${mode === 'paste' ? ' tab--on' : ''}`} onClick={() => setMode('paste')}>Paste text</button>
           </div>
 
           {mode === 'file' && (
+            // role="button" (it's a click/keyboard-activatable file picker) takes
+            // priority over tabpanel here — the id is enough for the tab's
+            // aria-controls to point somewhere real.
             <div
+              id="up-drop"
               className={`drop${dragging ? ' drop--active' : ''}${fileName && !extracting ? ' drop--done' : ''}`}
               onClick={() => inputRef.current?.click()}
               onDragOver={(e) => { e.preventDefault(); setDragging(true); }}

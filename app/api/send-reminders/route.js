@@ -73,6 +73,7 @@ async function sendExamReminders(admin, profileFor) {
     .gte('event_date', windowStart.toISOString().slice(0, 10));
 
   let sent = 0;
+  const sentIds = [];
   for (const ev of events || []) {
     if (!ev.courses?.remind_enabled) continue;
     const profile = profileFor(ev.user_id);
@@ -100,10 +101,12 @@ async function sendExamReminders(admin, profileFor) {
         </p>
       `,
     });
-    if (ok) {
-      await admin.from('course_events').update({ reminder_sent_at: new Date().toISOString() }).eq('id', ev.id);
-      sent += 1;
-    }
+    if (ok) { sentIds.push(ev.id); sent += 1; }
+  }
+  // One batched update instead of one write per send — scales with reminders
+  // sent per run rather than growing linearly forever.
+  if (sentIds.length) {
+    await admin.from('course_events').update({ reminder_sent_at: new Date().toISOString() }).in('id', sentIds);
   }
   return sent;
 }
@@ -129,6 +132,7 @@ async function sendStudySessionReminders(admin, profileFor) {
     .lte('session_date', tomorrow.toISOString().slice(0, 10));
 
   let sent = 0;
+  const sentIds = [];
   for (const s of sessions || []) {
     const profile = profileFor(s.user_id);
     if (!profile.emails_enabled || !profile.remind_study_sessions) continue;
@@ -150,10 +154,10 @@ async function sendStudySessionReminders(admin, profileFor) {
         <p><a href="${SITE_URL}/calendar">Open your calendar</a></p>
       `,
     });
-    if (ok) {
-      await admin.from('study_plan_sessions').update({ reminder_sent_at: new Date().toISOString() }).eq('id', s.id);
-      sent += 1;
-    }
+    if (ok) { sentIds.push(s.id); sent += 1; }
+  }
+  if (sentIds.length) {
+    await admin.from('study_plan_sessions').update({ reminder_sent_at: new Date().toISOString() }).in('id', sentIds);
   }
   return sent;
 }
