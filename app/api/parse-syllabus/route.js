@@ -8,11 +8,29 @@ export const maxDuration = 60;
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY, timeout: 50_000, maxRetries: 0 });
 const MAX_CHARS = 20000;
 const MAX_EVENTS = 40;
+const MONTHLY_SYLLABUS_LIMIT = Number(process.env.MONTHLY_SYLLABUS_LIMIT || 10);
 
 export async function POST(request) {
   const supabase = supabaseFromRequest(request);
   const { data: { user }, error: userError } = await supabase.auth.getUser();
   if (userError || !user) return Response.json({ error: 'Please log in first.' }, { status: 401 });
+
+  const today = new Date().toISOString().slice(0, 10);
+  const monthStart = `${today.slice(0, 7)}-01`;
+  const { data: allowed, error: usageError } = await supabase.rpc('try_increment_syllabus_usage', {
+    p_user_id: user.id, p_today: today, p_month_start: monthStart,
+    p_monthly_limit: MONTHLY_SYLLABUS_LIMIT,
+  });
+  if (usageError) {
+    console.error('parse-syllabus: usage check failed:', usageError);
+    return Response.json({ error: 'Something went wrong. Please try again.' }, { status: 500 });
+  }
+  if (!allowed) {
+    return Response.json(
+      { error: `You've hit this month's syllabus upload limit (${MONTHLY_SYLLABUS_LIMIT}). Try again next month.` },
+      { status: 429 }
+    );
+  }
 
   const body = await request.json().catch(() => ({}));
   let text = typeof body.text === 'string' ? body.text : '';
@@ -20,8 +38,6 @@ export async function POST(request) {
     return Response.json({ error: 'That text looks too short to be a syllabus.' }, { status: 400 });
   }
   if (text.length > MAX_CHARS) text = text.slice(0, MAX_CHARS);
-
-  const today = new Date().toISOString().slice(0, 10);
 
   try {
     const response = await anthropic.messages.create({

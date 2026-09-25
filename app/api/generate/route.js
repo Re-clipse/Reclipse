@@ -22,6 +22,12 @@ const DAILY_GENERATION_LIMIT = Number(process.env.DAILY_GENERATION_LIMIT || 5);
 // So 30 generations/month lands around $1.50-3/user/month at worst case, not
 // $1 — re-check this arithmetic if MODEL, max_tokens, or this limit change.
 const MONTHLY_GENERATION_LIMIT = Number(process.env.MONTHLY_GENERATION_LIMIT || 30);
+// Free (non-Campus Archive) monthly flashcard budget. Built and ready, but
+// gated off by default: at launch every user gets free Campus Archive
+// access, so this must not restrict anyone until FREE_TIER_LIMIT_ENABLED is
+// flipped to 'true' once that trial period ends — no code change needed then.
+const FREE_TIER_MONTHLY_CARD_LIMIT = Number(process.env.FREE_TIER_MONTHLY_CARD_LIMIT || 75);
+const FREE_TIER_LIMIT_ENABLED = process.env.FREE_TIER_LIMIT_ENABLED === 'true';
 
 export async function POST(request) {
   const supabase = supabaseFromRequest(request);
@@ -62,8 +68,36 @@ export async function POST(request) {
   }
   if (text.length > MAX_INPUT_CHARS) text = text.slice(0, MAX_INPUT_CHARS);
 
+  // Free-tier card cap. Disabled by default (see FREE_TIER_LIMIT_ENABLED above);
+  // when on, premium (Campus Archive) users are unaffected.
+  let cardBudget = MAX_FLASHCARDS;
+  if (FREE_TIER_LIMIT_ENABLED) {
+    const { data: hasArchiveAccess, error: archiveError } = await supabase.rpc('has_archive_access');
+    if (archiveError) {
+      console.error('generate: archive access check failed:', archiveError);
+      return Response.json({ error: 'Something went wrong. Please try again.' }, { status: 500 });
+    }
+    if (!hasArchiveAccess) {
+      const { data: granted, error: budgetError } = await supabase.rpc('try_reserve_free_card_budget', {
+        p_user_id: user.id, p_today: today, p_month_start: monthStart,
+        p_monthly_limit: FREE_TIER_MONTHLY_CARD_LIMIT, p_requested: MAX_FLASHCARDS,
+      });
+      if (budgetError) {
+        console.error('generate: free card budget check failed:', budgetError);
+        return Response.json({ error: 'Something went wrong. Please try again.' }, { status: 500 });
+      }
+      if (!granted) {
+        return Response.json(
+          { error: `You've used this month's free flashcard limit (${FREE_TIER_MONTHLY_CARD_LIMIT} cards). Upgrade to Campus Archive for unlimited generation.` },
+          { status: 429 }
+        );
+      }
+      cardBudget = granted;
+    }
+  }
+
   try {
-    const systemPrompt = buildSystemPrompt({ maxCards: MAX_FLASHCARDS, maxQuiz: MAX_QUIZ_QUESTIONS });
+    const systemPrompt = buildSystemPrompt({ maxCards: cardBudget, maxQuiz: MAX_QUIZ_QUESTIONS });
 
     // One retry if the reply can't be parsed (e.g. cut off mid-JSON): a second attempt
     // usually succeeds, and we only bill the student's daily quota once either way.
@@ -80,7 +114,7 @@ export async function POST(request) {
       });
       const block = response.content.find((c) => c.type === 'text');
       try {
-        parsed = parseGeneration(block?.text);
+        parsed = parseGeneration(block?.text, { maxCards: cardBudget });
       } catch (parseErr) {
         console.error(`generate: unusable reply (attempt ${attempt + 1}, stop_reason=${response.stop_reason}):`, parseErr.message);
       }

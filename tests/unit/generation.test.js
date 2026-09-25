@@ -159,6 +159,15 @@ describe('normalizeGeneration', () => {
     expect(out.flashcards).toHaveLength(MAX_FLASHCARDS);
   });
 
+  it('caps flashcards at a custom maxCards when passed', () => {
+    const many = Array.from({ length: MAX_FLASHCARDS + 20 }, (_, i) => ({
+      question: `Unique testable question number ${i} about topic ${i}?`,
+      answer: `Answer ${i}`,
+    }));
+    const out = normalizeGeneration({ flashcards: many }, { maxCards: 10 });
+    expect(out.flashcards).toHaveLength(10);
+  });
+
   it('handles flashcards not being an array at all', () => {
     expect(normalizeGeneration({ flashcards: 'nope' }).flashcards).toEqual([]);
     expect(normalizeGeneration({ flashcards: { a: 1 } }).flashcards).toEqual([]);
