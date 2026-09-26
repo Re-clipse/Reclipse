@@ -24,6 +24,7 @@ export default function ArchiveClient() {
   const [member, setMember] = useState(null);
   const [busy, setBusy] = useState(false);
   const [price, setPrice] = useState(null);
+  const [priceLoaded, setPriceLoaded] = useState(false);
   const [justSubscribed, setJustSubscribed] = useState(false);
   const [referral, setReferral] = useState(null);
   const router = useRouter();
@@ -44,7 +45,7 @@ export default function ArchiveClient() {
 
   useEffect(() => { load(''); }, []);
   useEffect(() => { hasArchiveAccess().then(setMember).catch(() => setMember(false)); }, []);
-  useEffect(() => { getArchivePrice().then(setPrice); }, []);
+  useEffect(() => { getArchivePrice().then((p) => { setPrice(p); setPriceLoaded(true); }); }, []);
   useEffect(() => {
     if (typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('subscribed') === '1') {
       setJustSubscribed(true);
@@ -83,20 +84,31 @@ export default function ArchiveClient() {
       <PageHeader accent="amber" icon={ICONS.archive} title="Campus Archive"
         subtitle="Complete study sets for specific courses, shared by other students taking (or who've taken) them." />
 
-      {member === false && (
+      {member === false && priceLoaded && !price && (
+        <div className="card member-card">
+          <Mascot mood="thinking" size={64} />
+          <div className="member-card__text">
+            <strong>Coming soon</strong>
+            <p className="small muted">
+              Membership isn&apos;t open yet — we&apos;re still setting up the Archive. You can browse
+              what&apos;s been shared below in the meantime.
+            </p>
+          </div>
+        </div>
+      )}
+      {member === false && priceLoaded && price && (
         <div className="card member-card">
           <Mascot mood="happy" size={64} />
           <div className="member-card__text">
             <strong>Study every set in the archive</strong>
             <p className="small muted">
-              {price ? `${formatArchivePrice(price)} unlocks` : 'One monthly membership unlocks'} all the
-              flashcards and quizzes below. Cancel any time — you keep access through the end of the
-              period you&apos;ve already paid for.
+              {formatArchivePrice(price)} unlocks all the flashcards and quizzes below. Cancel any
+              time — you keep access through the end of the period you&apos;ve already paid for.
             </p>
           </div>
           <button className="btn btn--page" disabled={busy}
                   style={{ '--pa': ACCENTS.amber.ink }} onClick={() => membershipAction(() => startArchiveCheckout())}>
-            {busy ? 'Opening…' : price ? `Get access — ${formatArchivePrice(price)}` : 'Get access'}
+            {busy ? 'Opening…' : `Get access — ${formatArchivePrice(price)}`}
           </button>
         </div>
       )}

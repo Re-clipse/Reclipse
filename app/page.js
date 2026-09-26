@@ -80,7 +80,9 @@ export default function Home() {
           </div>
           <div className="lp-strip__item">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="4" width="20" height="5" rx="1"/><path d="M4 9v9a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9"/></svg>
-            <a href="/archive">Campus Archive{price ? ` — ${formatArchivePrice(price)}` : ''}</a>: study sets shared by other students, optional
+            {price
+              ? <><a href="/archive">Campus Archive — {formatArchivePrice(price)}</a>: study sets shared by other students, optional</>
+              : <><a href="/archive">Campus Archive</a>: study sets shared by other students — coming soon</>}
           </div>
         </div>
       </div>
