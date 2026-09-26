@@ -2143,8 +2143,12 @@ body, .card, .nav, .input, .textarea, .btn, .flip__face {
 .cal-agenda { display: flex; flex-direction: column; gap: var(--s-5); }
 .cal-agenda__date { font-weight: 700; margin-bottom: var(--s-2); }
 .cal-agenda__item {
-  display: flex; align-items: center; gap: var(--s-3); width: 100%; text-align: left;
-  border-left: 4px solid var(--violet-500); cursor: pointer;
+  display: flex; align-items: center; gap: var(--s-3); width: 100%;
+  border-left: 4px solid var(--violet-500);
+}
+.cal-agenda__item-btn {
+  display: flex; align-items: center; gap: var(--s-3); flex: 1; min-width: 0;
+  text-align: left; background: none; border: none; padding: 0; cursor: pointer; font: inherit; color: inherit;
 }
 .cal-agenda__title { flex: 1; font-weight: 600; }
 

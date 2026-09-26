@@ -173,6 +173,7 @@ function StudyInner() {
           </p>
           <div className="row actions-sm-stack" style={{ justifyContent: 'center', flexWrap: 'wrap', marginTop: 'var(--s-6)' }}>
             {deckId && <a href={`/quiz?deck=${deckId}`} className="btn btn--primary">Take the quiz</a>}
+            {deckId && <a href={`/lab-prep?deck=${deckId}`} className="btn btn--ghost">Prep a lab</a>}
             <a href="/decks" className="btn btn--ghost">My decks</a>
             <a href="/stats" className="btn btn--quiet">See progress</a>
           </div>

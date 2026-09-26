@@ -359,16 +359,21 @@ function AgendaView({ itemsByDate, courseColor, onSelect }) {
           <div className="cal-agenda__date">{formatAgendaDate(date)}</div>
           <div className="stack">
             {itemsByDate.get(date).map((item) => (
-              <button key={item.kind === 'lab' ? `${item.data.id}-${item.data.occurrenceDate}` : item.data.id}
-                      type="button" className="card cal-agenda__item"
-                      style={{ borderLeftColor: courseAccentHex(courseColor, itemCourseId(item)) }}
-                      onClick={() => onSelect(item)}>
-                <span className="cal-pill__dot" style={{ background: TYPE_DOT[itemType(item)] || TYPE_DOT.other }} />
-                <span className="cal-agenda__title">{itemTitle(item)}</span>
-                {item.kind === 'event' && <span className="badge">{TYPE_LABEL[item.data.event_type]}</span>}
-                {item.kind === 'lab' && <span className="badge">Lab</span>}
-                {item.kind === 'session' && item.data.status !== 'pending' && <span className="badge">{item.data.status}</span>}
-              </button>
+              <div key={item.kind === 'lab' ? `${item.data.id}-${item.data.occurrenceDate}` : item.data.id}
+                   className="card cal-agenda__item" style={{ borderLeftColor: courseAccentHex(courseColor, itemCourseId(item)) }}>
+                <button type="button" className="cal-agenda__item-btn" onClick={() => onSelect(item)}>
+                  <span className="cal-pill__dot" style={{ background: TYPE_DOT[itemType(item)] || TYPE_DOT.other }} />
+                  <span className="cal-agenda__title">{itemTitle(item)}</span>
+                  {item.kind === 'event' && <span className="badge">{TYPE_LABEL[item.data.event_type]}</span>}
+                  {item.kind === 'lab' && <span className="badge">Lab</span>}
+                  {item.kind === 'session' && item.data.status !== 'pending' && <span className="badge">{item.data.status}</span>}
+                </button>
+                {item.kind === 'lab' && (
+                  <a href={`/lab-prep?course=${encodeURIComponent(item.data.course_code)}`} className="btn btn--quiet">
+                    Prep for this lab
+                  </a>
+                )}
+              </div>
             ))}
           </div>
         </div>
