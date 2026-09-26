@@ -35,6 +35,7 @@ export async function POST(request) {
 
   try {
     const session = await stripe().checkout.sessions.create({
+      ui_mode: 'hosted_page',
       mode: 'subscription',
       line_items: [lineItem],
       // The webhook trusts ONLY this metadata, never anything the client sends.
@@ -45,6 +46,14 @@ export async function POST(request) {
         : { customer_email: user.email }),
       success_url: `${site}${back}?subscribed=1`,
       cancel_url: `${site}${back}`,
+      billing_address_collection: 'auto',
+      phone_number_collection: { enabled: false },
+      automatic_tax: { enabled: true },
+      allow_promotion_codes: true,
+      payment_method_collection: 'always',
+      submit_type: 'auto',
+      integration_identifier: 'hosted_web_0001',
+      origin_context: 'web',
     });
     return Response.json({ url: session.url });
   } catch (err) {
