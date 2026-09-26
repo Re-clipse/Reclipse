@@ -146,6 +146,17 @@ export async function POST(request) {
     if (err?.status === 429 || err?.status === 529) {
       return Response.json({ error: 'The AI service is busy right now. Please try again in a moment.' }, { status: 503 });
     }
+    if (err?.status === 400) {
+      // The AI rejected the request itself (as opposed to a network/server
+      // issue) — most likely something in the source material the request
+      // shape can't carry, even after sanitizeText(). Surfacing this
+      // distinctly (rather than falling into the generic 500 below) makes it
+      // possible to tell the two apart from the client error alone.
+      return Response.json(
+        { error: 'That material could not be processed. Try removing unusual formatting or symbols, or paste as plain text.' },
+        { status: 422 }
+      );
+    }
     return Response.json({ error: 'Something went wrong. Please try again.' }, { status: 500 });
   }
 }

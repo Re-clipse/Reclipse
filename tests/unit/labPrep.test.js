@@ -1,8 +1,38 @@
 import { describe, it, expect } from 'vitest';
 import {
   MAX_SOURCE_CHARS, MAX_TURNS,
-  truncateSource, buildDeckSourceText, isPremiumUser, validateConversation, turnWithinMonthlyLimit,
+  truncateSource, sanitizeText, buildDeckSourceText, isPremiumUser, validateConversation, turnWithinMonthlyLimit,
 } from '@/lib/labPrep';
+
+describe('sanitizeText', () => {
+  it('leaves normal text untouched', () => {
+    expect(sanitizeText('Given a = 1, find b.')).toBe('Given a = 1, find b.');
+  });
+
+  it('keeps newlines and tabs', () => {
+    expect(sanitizeText('line one\n\tline two')).toBe('line one\n\tline two');
+  });
+
+  it('strips control characters', () => {
+    expect(sanitizeText('a\u0000b\u001Fc\u007Fd')).toBe('abcd');
+  });
+
+  it('strips an unpaired high surrogate', () => {
+    expect(sanitizeText('before\uD800after')).toBe('beforeafter');
+  });
+
+  it('strips an unpaired low surrogate but keeps the preceding character', () => {
+    expect(sanitizeText('before\uDC00after')).toBe('beforeafter');
+  });
+
+  it('keeps a properly paired surrogate (a real emoji)', () => {
+    expect(sanitizeText('math 🔬 lab')).toBe('math 🔬 lab');
+  });
+
+  it('handles a lone low surrogate as the very first character', () => {
+    expect(sanitizeText('\uDC00rest')).toBe('rest');
+  });
+});
 
 describe('truncateSource', () => {
   it('leaves short text untouched', () => {
@@ -18,6 +48,10 @@ describe('truncateSource', () => {
 
   it('trims whitespace before measuring', () => {
     expect(truncateSource('  padded  ')).toEqual({ text: 'padded', truncated: false });
+  });
+
+  it('strips unpaired surrogates before measuring', () => {
+    expect(truncateSource('math\uD800problem')).toEqual({ text: 'mathproblem', truncated: false });
   });
 });
 
