@@ -110,7 +110,12 @@ function LabPrepInner() {
       messages: [firstMessage],
     });
     setStarting(false);
-    if (!res.ok) { setError(res.error || 'Something went wrong. Please try again.'); return; }
+    if (!res.ok) {
+      // TEMPORARY: appending res.detail while this route is being debugged — remove
+      // alongside the matching TEMPORARY block in app/api/lab-prep/route.js.
+      setError((res.error || 'Something went wrong. Please try again.') + (res.detail ? ` [${res.detail}]` : ''));
+      return;
+    }
     setThread([firstMessage, { role: 'assistant', content: res.reply }]);
     setStarted(true);
   }

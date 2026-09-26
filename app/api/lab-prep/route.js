@@ -44,7 +44,7 @@ export async function POST(request) {
     const { data: hasPremium, error: premiumError } = await supabase.rpc('has_premium_access');
     if (premiumError) {
       console.error('lab-prep: premium check failed:', premiumError);
-      return Response.json({ error: 'Something went wrong. Please try again.' }, { status: 500 });
+      return Response.json({ error: 'Something went wrong (premium check). Please try again.', detail: premiumError.message }, { status: 500 });
     }
     premium = Boolean(hasPremium);
   }
@@ -95,7 +95,7 @@ export async function POST(request) {
   });
   if (turnError) {
     console.error('lab-prep: usage check failed:', turnError);
-    return Response.json({ error: 'Something went wrong. Please try again.' }, { status: 500 });
+    return Response.json({ error: 'Something went wrong (usage check). Please try again.', detail: turnError.message }, { status: 500 });
   }
   if (!granted) {
     return Response.json(
@@ -157,6 +157,15 @@ export async function POST(request) {
         { status: 422 }
       );
     }
-    return Response.json({ error: 'Something went wrong. Please try again.' }, { status: 500 });
+    // TEMPORARY: surfacing err.name/status/message to the client while this
+    // route is being debugged — Vercel's runtime-logs API isn't returning
+    // anything for this project, so console.error above isn't visible any
+    // other way right now. Remove once the actual failure mode is confirmed
+    // and fixed; this is not sensitive (Anthropic's own error text), but it's
+    // not something a shipped feature should expose either.
+    return Response.json(
+      { error: 'Something went wrong (AI call). Please try again.', detail: `${err?.name || 'Error'} ${err?.status || ''}: ${msg}`.trim() },
+      { status: 500 }
+    );
   }
 }
