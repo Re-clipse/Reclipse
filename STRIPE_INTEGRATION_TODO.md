@@ -32,7 +32,7 @@ existing Checkout Session call.
 | ui_mode | hosted_page |
 | billing_address_collection | auto |
 | phone_number_collection | `{ enabled: false }` |
-| automatic_tax | `{ enabled: true }` |
+| automatic_tax | `{ enabled: false }` |
 | allow_promotion_codes | true |
 | payment_method_collection | always |
 | submit_type | auto |
@@ -62,11 +62,16 @@ in place untouched.
 
 ## Setup and next steps
 
-1. **Activate Stripe Tax in the Dashboard.** `automatic_tax.enabled: true` is
-   now set on every checkout session, but Stripe will reject session creation
-   with an error until Stripe Tax is turned on for your account and you've
-   added at least one tax registration:
-   https://dashboard.stripe.com/settings/tax
+1. **`automatic_tax` is off on purpose.** Canada's small-supplier rule: under
+   CA$30,000 in worldwide taxable revenue over the last four consecutive
+   calendar quarters, GST/HST registration (and collection) is optional, and
+   this business isn't registered. Once you're close to that threshold or
+   register voluntarily, flip `automatic_tax: { enabled: true }` back on in
+   [app/api/archive/subscribe/route.js](app/api/archive/subscribe/route.js)
+   — but activate Stripe Tax and add a tax registration in the Dashboard
+   first (https://dashboard.stripe.com/settings/tax), or Stripe will reject
+   session creation. Worth a quick confirm with an accountant as you
+   approach the threshold — this isn't tax advice.
 2. **Production is still missing required env vars.** Checkout currently
    fails server-side (`stripeConfigured()` returns false) because Vercel's
    production environment doesn't have `STRIPE_WEBHOOK_SECRET` set, and

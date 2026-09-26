@@ -48,7 +48,10 @@ export async function POST(request) {
       cancel_url: `${site}${back}`,
       billing_address_collection: 'auto',
       phone_number_collection: { enabled: false },
-      automatic_tax: { enabled: true },
+      // Off while revenue stays under the CRA's $30k/yr small-supplier
+      // threshold — below that, GST/HST registration (and collection) is
+      // optional, and this business isn't registered. Revisit once you are.
+      automatic_tax: { enabled: false },
       allow_promotion_codes: true,
       payment_method_collection: 'always',
       submit_type: 'auto',
