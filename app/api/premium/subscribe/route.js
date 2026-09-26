@@ -33,6 +33,7 @@ export async function POST(request) {
 
   try {
     const session = await stripe().checkout.sessions.create({
+      ui_mode: 'hosted_page',
       mode: 'subscription',
       line_items: [lineItem],
       // The webhook trusts ONLY this metadata, never anything the client sends.
@@ -44,7 +45,15 @@ export async function POST(request) {
       success_url: `${site}/settings?premium=1`,
       cancel_url: `${site}/settings`,
       billing_address_collection: 'auto',
+      phone_number_collection: { enabled: false },
+      // Off while revenue stays under the CRA's $30k/yr small-supplier
+      // threshold — see STRIPE_INTEGRATION_TODO.md.
+      automatic_tax: { enabled: false },
       allow_promotion_codes: true,
+      payment_method_collection: 'always',
+      submit_type: 'auto',
+      integration_identifier: 'hosted_web_0001',
+      origin_context: 'web',
     });
     return Response.json({ url: session.url });
   } catch (err) {
