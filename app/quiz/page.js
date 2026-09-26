@@ -173,7 +173,7 @@ function QuizInner() {
 
           <ReferralPrompt code={referral?.code} link={referral?.link}
             title="Studying with classmates? Invite them"
-            note="Share your link — every friend who signs up raises your monthly AI-generation limit by 5, and if they later subscribe to Campus Archive, you both also get a discount." />
+            note="Share your link — every friend who signs up raises your monthly AI-generation limit by 5." />
         </main>
       );
     }

@@ -129,7 +129,7 @@ function ArchiveDeckInner() {
       {justSubscribed && access && (
         <ReferralPrompt code={referral?.code} link={referral?.link}
           title="Know someone who'd want this too?"
-          note="Share your link — every friend who signs up raises your monthly AI-generation limit by 5, and if they subscribe too, you both get a discount on your next month." />
+          note="Share your link — every friend who signs up raises your monthly AI-generation limit by 5." />
       )}
 
       {preview.samples.length > 0 && (

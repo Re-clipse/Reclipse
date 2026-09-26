@@ -395,8 +395,7 @@ export default function SettingsPage() {
         <div style={{ fontWeight: 650, marginBottom: 'var(--s-1)' }}>Refer a friend</div>
         <p className="small muted u-mb-4">
           Share your code with a friend. They enter it in the referral code field when they sign up —
-          every friend who signs up permanently raises your monthly AI-generation limit by 5, and if
-          they later subscribe to the Campus Archive, you both also get a discount on your next month.
+          every friend who signs up permanently raises your monthly AI-generation limit by 5.
         </p>
         {refCode ? (
           <>
