@@ -45,3 +45,7 @@ brag-output-*/
 /playwright-report/
 /blob-report/
 /coverage/
+
+# scratch working directory for the pricing-strategy skill's in-progress
+# research deliverables — not app source, not meant to persist in history
+/_workspace/
