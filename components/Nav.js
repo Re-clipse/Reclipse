@@ -11,6 +11,7 @@ const LINKS = [
   ['/syllabus', 'Syllabus'],
   ['/exam', 'Mock exam'],
   ['/discover', 'Discover'],
+  ['/lab-prep', 'Lab Prep'],
   ['/archive', 'Archive'],
   ['/stats', 'Progress'],
 ];
