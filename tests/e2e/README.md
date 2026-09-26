@@ -56,3 +56,16 @@ Once either exists, add `tests/e2e/signup-generate-study.spec.js` following
 the fixture pattern in this repo's other specs: create a user + course via
 the API, seed a deck (real or mocked-generate), then assert the UI journey
 exactly as these smoke tests do today.
+
+**The lab-reminders walkthrough** (`/calendar`, `components/LabRemindersModal.js`)
+hits the same wall: the walkthrough only appears on a real, signed-in
+`/calendar` page load with a `profiles` row and (for the "yes" path) a
+`lab_schedules` insert — none of which this sandbox can produce without the
+same real-Supabase setup described above. `lib/labSchedule.js`'s pure
+occurrence/reminder-timing logic (including a fixed-clock, non-UTC-timezone
+case) is covered in `tests/unit/labSchedule.test.js` instead. Once a real or
+local Supabase project exists for this suite, add a spec here that signs in,
+visits `/calendar` fresh (`profiles.lab_walkthrough_seen = false`), and
+covers both paths: "No thanks" dismisses and never reappears on reload;
+"Yes, add my labs" reaches the add-row form, submits one row, and the lab
+then appears in the "Your labs" list.

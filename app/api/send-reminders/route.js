@@ -1,14 +1,17 @@
 import crypto from 'crypto';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { SITE_URL, escapeHtml, sendEmail } from '@/lib/email';
+import { localToday } from '@/lib/dates';
+import { shouldSendLabReminder } from '@/lib/labSchedule';
 
 // Called on a schedule (see vercel.json) — not by any page in the app. Sends
-// four kinds of email, each with its own "already sent" guard so a daily
+// five kinds of email, each with its own "already sent" guard so a daily
 // cron run never duplicates anything:
 //   1. Exam/quiz/lab/assignment reminders — course_events.reminder_sent_at
 //   2. Study-session-day reminders        — study_plan_sessions.reminder_sent_at
-//   3. Weekly digest (Sundays)            — profiles.last_digest_sent_at
-//   4. Streak-loss warning                — profiles.last_streak_warning_sent_at
+//   3. Recurring weekly lab reminders     — lab_schedules.last_reminder_sent_on
+//   4. Weekly digest (Sundays)            — profiles.last_digest_sent_at
+//   5. Streak-loss warning                — profiles.last_streak_warning_sent_at
 // Uses the admin client deliberately: a cron job isn't "someone", so RLS
 // can't be the authorization boundary — the WHERE clauses (and the per-user
 // email prefs below) are.
@@ -44,12 +47,13 @@ export async function GET(request) {
 
   const examSent = await sendExamReminders(admin, profileFor);
   const sessionSent = await sendStudySessionReminders(admin, profileFor);
+  const labSent = await sendLabReminders(admin, profileFor);
   const streakDates = await fetchRecentSessionDates(admin);
   const digestSent = await sendWeeklyDigests(admin, profiles, streakDates);
   const streakSent = await sendStreakLossWarnings(admin, profiles, streakDates);
 
   return Response.json({
-    examReminders: examSent, studySessionReminders: sessionSent,
+    examReminders: examSent, studySessionReminders: sessionSent, labReminders: labSent,
     weeklyDigests: digestSent, streakWarnings: streakSent,
   });
 }
@@ -162,6 +166,52 @@ async function sendStudySessionReminders(admin, profileFor) {
   return sent;
 }
 
+// ---------- 3. Recurring weekly lab reminders ----------
+async function sendLabReminders(admin, profileFor) {
+  const { data: labs } = await admin
+    .from('lab_schedules')
+    .select('id, user_id, course_code, course_name, weekday, time, ends_on, active, last_reminder_sent_on')
+    .eq('active', true)
+    // A loose superset bound (the lab's term hasn't ended, roughly) — the
+    // same "SQL narrows, JS decides precisely per-timezone" split as the
+    // other reminder types above.
+    .gte('ends_on', new Date(Date.now() - 86400000).toISOString().slice(0, 10));
+
+  let sent = 0;
+  const sentUpdates = [];
+  for (const lab of labs || []) {
+    const profile = profileFor(lab.user_id);
+    if (!profile.emails_enabled) continue;
+
+    const { date: localDate } = localToday(profile.timezone);
+    const { send, occurrenceDate } = shouldSendLabReminder(lab, localDate);
+    if (!send) continue;
+
+    const email = await getEmail(admin, lab.user_id);
+    if (!email) continue;
+
+    const courseLabel = escapeHtml(lab.course_name ? `${lab.course_code} — ${lab.course_name}` : lab.course_code);
+    const timeNote = lab.time ? ` at ${escapeHtml(lab.time)}` : '';
+    const ok = await sendEmail(lab.user_id, email, {
+      subject: `${lab.course_code} lab is tomorrow`,
+      html: `
+        <p>Hey, just a heads up:</p>
+        <p>Your <strong>${courseLabel}</strong> lab is tomorrow${timeNote} (${occurrenceDate}).</p>
+        <p>Might be a good time to review your decks for it.</p>
+        <p><a href="${SITE_URL}/calendar">Open your calendar</a></p>
+      `,
+    });
+    if (ok) { sentUpdates.push({ id: lab.id, occurrenceDate }); sent += 1; }
+  }
+  // Each lab can land on a different occurrence date, so this can't be one
+  // batched .in() update like the other reminder types — still one write
+  // per send rather than per lab checked, which is the part that scales.
+  for (const { id, occurrenceDate } of sentUpdates) {
+    await admin.from('lab_schedules').update({ last_reminder_sent_on: occurrenceDate }).eq('id', id);
+  }
+  return sent;
+}
+
 // ---------- shared: recent study_sessions dates, for streak content ----------
 // A plain per-user Set of "days studied" (last 60 days is enough for any
 // streak a warning or digest line would realistically mention) computed once
@@ -194,7 +244,7 @@ function streakEndingAt(days, dateStr) {
   return streak;
 }
 
-// ---------- 3. Weekly digest (Sundays, per the student's own timezone) ----------
+// ---------- 4. Weekly digest (Sundays, per the student's own timezone) ----------
 async function sendWeeklyDigests(admin, profiles, streakDates) {
   const weekAhead = new Date(); weekAhead.setDate(weekAhead.getDate() + 7);
   const todayIso = new Date().toISOString().slice(0, 10);
@@ -273,7 +323,7 @@ async function sendWeeklyDigests(admin, profiles, streakDates) {
   return sent;
 }
 
-// ---------- 4. Streak-loss warning ----------
+// ---------- 5. Streak-loss warning ----------
 // Fires only for a student whose streak is already at least 2 days, who
 // hasn't studied yet today, and for whom it's currently evening in their own
 // timezone — this cron runs once a day (see vercel.json), so in practice
@@ -321,28 +371,6 @@ async function sendStreakLossWarnings(admin, profiles, streakDates) {
 }
 
 // ---------- shared helpers ----------
-function localToday(timeZone) {
-  try {
-    const parts = new Intl.DateTimeFormat('en-US', {
-      timeZone, year: 'numeric', month: '2-digit', day: '2-digit', weekday: 'short',
-      hour: 'numeric', hourCycle: 'h23',
-    }).formatToParts(new Date());
-    const get = (t) => parts.find((p) => p.type === t)?.value;
-    return {
-      date: `${get('year')}-${get('month')}-${get('day')}`,
-      weekday: get('weekday'),
-      hour: Number(get('hour')),
-    };
-  } catch {
-    const d = new Date();
-    return {
-      date: d.toISOString().slice(0, 10),
-      weekday: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d.getUTCDay()],
-      hour: d.getUTCHours(),
-    };
-  }
-}
-
 function shiftDate(dateStr, deltaDays) {
   const d = new Date(`${dateStr}T00:00:00Z`);
   d.setUTCDate(d.getUTCDate() + deltaDays);

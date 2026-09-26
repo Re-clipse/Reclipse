@@ -10,6 +10,8 @@ import LoadError from '@/components/LoadError';
 import { withTimeout } from '@/lib/net';
 import { downloadIcs } from '@/lib/ics';
 import { localIso } from '@/lib/dates';
+import { upcomingLabOccurrences } from '@/lib/labSchedule';
+import LabRemindersModal from '@/components/LabRemindersModal';
 
 const TYPE_LABEL = { exam: 'Exam', quiz: 'Quiz', lab: 'Lab', assignment: 'Assignment', other: 'Date' };
 // Type dot is independent of the course's accent color, so an event reads as
@@ -56,6 +58,9 @@ export default function CalendarPage() {
   const [events, setEvents] = useState([]);
   const [sessions, setSessions] = useState([]);
   const [courses, setCourses] = useState([]);
+  const [labs, setLabs] = useState([]);
+  const [labWalkthroughSeen, setLabWalkthroughSeen] = useState(true); // default true so it never flashes before load resolves
+  const [labModalStep, setLabModalStep] = useState(null); // null | 'ask' | 'manage'
   const [view, setView] = useState('month');
   const [cursor, setCursor] = useState(() => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1); });
   const [selected, setSelected] = useState(null);
@@ -68,15 +73,19 @@ export default function CalendarPage() {
     if (!user) return;
     setStatus('loading');
     try {
-      const [eventsRes, sessionsRes, coursesRes] = await withTimeout(Promise.all([
+      const [eventsRes, sessionsRes, coursesRes, labsRes, profileRes] = await withTimeout(Promise.all([
         supabase.from('course_events').select('id, title, event_date, event_type, course_id, courses(name)').order('event_date'),
         supabase.from('study_plan_sessions').select(SESSION_SELECT).order('session_date'),
-        supabase.from('courses').select('id, name').order('name'),
+        supabase.from('courses').select('id, name, code').order('name'),
+        supabase.from('lab_schedules').select('id, course_code, course_name, weekday, time, ends_on, active').order('created_at'),
+        supabase.from('profiles').select('lab_walkthrough_seen').eq('user_id', user.id).maybeSingle(),
       ]), 12000, 'calendar');
       if (eventsRes.error || sessionsRes.error || coursesRes.error) { setStatus('failed'); return; }
       setEvents(eventsRes.data || []);
       setSessions(sessionsRes.data || []);
       setCourses(coursesRes.data || []);
+      setLabs(labsRes.data || []);
+      setLabWalkthroughSeen(Boolean(profileRes.data?.lab_walkthrough_seen));
       setStatus('ready');
     } catch {
       setStatus('failed');
@@ -126,8 +135,33 @@ export default function CalendarPage() {
     const push = (date, item) => { if (!map.has(date)) map.set(date, []); map.get(date).push(item); };
     events.forEach((e) => push(e.event_date, { kind: 'event', data: e }));
     sessions.forEach((s) => push(s.session_date, { kind: 'session', data: s }));
+    // Labs are a recurring rule, not a stored row per week — occurrences are
+    // computed here, bounded by each lab's own end-of-term date.
+    labs.filter((l) => l.active).forEach((lab) => {
+      upcomingLabOccurrences(lab, { limit: 16 }).forEach((date) => {
+        push(date, { kind: 'lab', data: { ...lab, occurrenceDate: date } });
+      });
+    });
     return map;
-  }, [events, sessions]);
+  }, [events, sessions, labs]);
+
+  // First-ever visit to /calendar: offer the walkthrough once, then never
+  // show it again automatically (profiles.lab_walkthrough_seen).
+  useEffect(() => {
+    if (status !== 'ready' || labWalkthroughSeen) return;
+    setLabModalStep('ask');
+  }, [status, labWalkthroughSeen]);
+
+  async function dismissWalkthrough() {
+    setLabModalStep(null);
+    setLabWalkthroughSeen(true);
+    if (user) await supabase.from('profiles').upsert({ user_id: user.id, lab_walkthrough_seen: true }, { onConflict: 'user_id' });
+  }
+
+  async function closeLabModal() {
+    setLabModalStep(null);
+    if (!labWalkthroughSeen) await dismissWalkthrough();
+  }
 
   async function saveEvent(id, patch) {
     const { error } = await supabase.from('course_events').update(patch).eq('id', id);
@@ -171,19 +205,27 @@ export default function CalendarPage() {
     downloadIcs(icsEvents, 'reclipse-calendar.ics');
   }
 
+  function selectItem(item) {
+    if (item.kind === 'lab') { setLabModalStep('manage'); return; }
+    setSelected(item);
+  }
+
   if (authLoading) return <main className="page"><div className="skeleton" style={{ height: 420 }} /></main>;
   if (status === 'failed') return <main className="page"><LoadError onRetry={load} /></main>;
 
-  const isEmpty = status === 'ready' && !events.length && !sessions.length;
+  const isEmpty = status === 'ready' && !events.length && !sessions.length && !labs.length;
 
   return (
     <main className="page">
       <PageHeader accent="indigo" icon={ICONS.calendar} title="Calendar"
         subtitle="Your exam, quiz and lab dates — plus a spaced study plan leading up to each exam and quiz."
         action={
-          <button className="btn btn--ghost" onClick={exportCalendar} disabled={isEmpty}>
-            Export to calendar
-          </button>
+          <div className="row">
+            <button className="btn btn--quiet" onClick={() => setLabModalStep('manage')}>Lab reminders</button>
+            <button className="btn btn--ghost" onClick={exportCalendar} disabled={isEmpty}>
+              Export to calendar
+            </button>
+          </div>
         } />
 
       <div className="tabs" role="tablist" aria-label="Calendar view" style={{ marginBottom: 'var(--s-4)' }}
@@ -205,18 +247,21 @@ export default function CalendarPage() {
           <div className="skeleton" style={{ height: 420 }} />
         ) : view === 'month' ? (
           <MonthGrid
-            cursor={cursor} itemsByDate={itemsByDate} courseColor={courseColor} onSelect={setSelected}
+            cursor={cursor} itemsByDate={itemsByDate} courseColor={courseColor} onSelect={selectItem}
             onPrev={() => setCursor((c) => new Date(c.getFullYear(), c.getMonth() - 1, 1))}
             onNext={() => setCursor((c) => new Date(c.getFullYear(), c.getMonth() + 1, 1))}
             onToday={() => { const d = new Date(); setCursor(new Date(d.getFullYear(), d.getMonth(), 1)); }} />
         ) : isEmpty ? null : (
-          <AgendaView itemsByDate={itemsByDate} courseColor={courseColor} onSelect={setSelected} />
+          <AgendaView itemsByDate={itemsByDate} courseColor={courseColor} onSelect={selectItem} />
         )}
       </div>
 
       {isEmpty && (
         <div className="card center u-p-6 u-mt-5">
-          <p className="muted">No dates yet. <a href="/syllabus">Upload a syllabus</a> to get started.</p>
+          <p className="muted">
+            No dates yet. <a href="/syllabus">Upload a syllabus</a> to get started, or{' '}
+            <button type="button" className="linklike" onClick={() => setLabModalStep('manage')}>add lab reminders</button>.
+          </p>
         </div>
       )}
 
@@ -224,6 +269,17 @@ export default function CalendarPage() {
         <EventModal item={selected} onClose={() => setSelected(null)}
                     onSaveEvent={saveEvent} onDeleteEvent={deleteEvent}
                     onSetSessionStatus={setSessionStatus} onDeleteSession={deleteSession} />
+      )}
+
+      {labModalStep && (
+        <LabRemindersModal
+          initialStep={labModalStep}
+          labs={labs}
+          courses={courses}
+          onClose={closeLabModal}
+          onDismissWalkthrough={dismissWalkthrough}
+          onLabsChanged={setLabs}
+        />
       )}
     </main>
   );
@@ -265,16 +321,29 @@ function MonthGrid({ cursor, itemsByDate, courseColor, onSelect, onPrev, onNext,
   );
 }
 
+function itemTitle(item) {
+  if (item.kind === 'event') return item.data.title;
+  if (item.kind === 'lab') return `${item.data.course_code} Lab`;
+  return `Study: ${item.data.course_events?.title || 'session'}`;
+}
+function itemType(item) {
+  if (item.kind === 'event') return item.data.event_type;
+  if (item.kind === 'lab') return 'lab';
+  return 'other';
+}
+function itemCourseId(item) {
+  if (item.kind === 'event') return item.data.course_id;
+  if (item.kind === 'lab') return null; // free-text course_code, no FK to courses
+  return item.data.course_events?.course_id;
+}
+
 function CalPill({ item, courseColor, onSelect }) {
-  const isEvent = item.kind === 'event';
-  const courseId = isEvent ? item.data.course_id : item.data.course_events?.course_id;
-  const type = isEvent ? item.data.event_type : 'other';
   return (
     <button type="button" className={`cal-pill cal-pill--${item.kind}`}
-            style={{ borderLeftColor: courseAccentHex(courseColor, courseId) }}
+            style={{ borderLeftColor: courseAccentHex(courseColor, itemCourseId(item)) }}
             onClick={() => onSelect(item)}>
-      <span className="cal-pill__dot" style={{ background: TYPE_DOT[type] || TYPE_DOT.other }} />
-      {isEvent ? item.data.title : `Study: ${item.data.course_events?.title || 'session'}`}
+      <span className="cal-pill__dot" style={{ background: TYPE_DOT[itemType(item)] || TYPE_DOT.other }} />
+      {itemTitle(item)}
     </button>
   );
 }
@@ -289,23 +358,18 @@ function AgendaView({ itemsByDate, courseColor, onSelect }) {
         <div key={date} className="cal-agenda__day">
           <div className="cal-agenda__date">{formatAgendaDate(date)}</div>
           <div className="stack">
-            {itemsByDate.get(date).map((item) => {
-              const isEvent = item.kind === 'event';
-              const courseId = isEvent ? item.data.course_id : item.data.course_events?.course_id;
-              const type = isEvent ? item.data.event_type : 'other';
-              return (
-                <button key={item.data.id} type="button" className="card cal-agenda__item"
-                        style={{ borderLeftColor: courseAccentHex(courseColor, courseId) }}
-                        onClick={() => onSelect(item)}>
-                  <span className="cal-pill__dot" style={{ background: TYPE_DOT[type] || TYPE_DOT.other }} />
-                  <span className="cal-agenda__title">
-                    {isEvent ? item.data.title : `Study: ${item.data.course_events?.title || 'session'}`}
-                  </span>
-                  {isEvent && <span className="badge">{TYPE_LABEL[item.data.event_type]}</span>}
-                  {!isEvent && item.data.status !== 'pending' && <span className="badge">{item.data.status}</span>}
-                </button>
-              );
-            })}
+            {itemsByDate.get(date).map((item) => (
+              <button key={item.kind === 'lab' ? `${item.data.id}-${item.data.occurrenceDate}` : item.data.id}
+                      type="button" className="card cal-agenda__item"
+                      style={{ borderLeftColor: courseAccentHex(courseColor, itemCourseId(item)) }}
+                      onClick={() => onSelect(item)}>
+                <span className="cal-pill__dot" style={{ background: TYPE_DOT[itemType(item)] || TYPE_DOT.other }} />
+                <span className="cal-agenda__title">{itemTitle(item)}</span>
+                {item.kind === 'event' && <span className="badge">{TYPE_LABEL[item.data.event_type]}</span>}
+                {item.kind === 'lab' && <span className="badge">Lab</span>}
+                {item.kind === 'session' && item.data.status !== 'pending' && <span className="badge">{item.data.status}</span>}
+              </button>
+            ))}
           </div>
         </div>
       ))}
