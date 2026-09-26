@@ -14,9 +14,9 @@ const MODEL = process.env.LAB_PREP_MODEL || 'claude-haiku-4-5-20251001';
 
 // Premium-only feature, so there's no free-tier variant of this limit.
 //
-// Worst-case cost per FULL session (MAX_TURNS=8 exchanges, no cache hits —
-// prompt caching, when it hits, brings this down, but the estimate below
-// ignores that benefit on purpose to stay a true worst case): source
+// Worst-case cost per FULL session (MAX_TURNS=8 exchanges — no prompt
+// caching is in play right now, see the note above the Anthropic call
+// below, so this is also the TYPICAL cost, not just the worst case): source
 // material + instructions ≈ 2.3k tokens, resent every turn alongside the
 // growing conversation history (max_tokens capped at MAX_TOKENS_PER_REPLY
 // each reply). Summed input across all 8 calls ≈ 46k tokens; summed output
@@ -106,13 +106,17 @@ export async function POST(request) {
 
   try {
     const systemPrompt = buildLabPrepSystemPrompt({ sourceLabel, sourceText: cappedSource, maxTokens: MAX_TOKENS_PER_REPLY });
+    // NOTE: no cache_control here. Prompt caching would help (the system
+    // prompt is identical across every turn of a session), but the pinned
+    // @anthropic-ai/sdk version (0.32.1) only supports it via the separate
+    // client.beta.promptCaching.messages resource, not this plain
+    // messages.create() call — adding cache_control here made every request
+    // fail. Revisit once the SDK is upgraded (a version bump, not a new
+    // dependency) past when caching became part of the stable endpoint.
     const response = await anthropic.messages.create({
       model: MODEL,
       max_tokens: MAX_TOKENS_PER_REPLY,
-      // The system prompt (source material + instructions) is identical across
-      // every turn of one session — caching it means only the first call pays
-      // full price for it; follow-ups pay the much cheaper cache-read rate.
-      system: [{ type: 'text', text: systemPrompt, cache_control: { type: 'ephemeral' } }],
+      system: systemPrompt,
       messages,
     });
     const block = response.content.find((c) => c.type === 'text');
