@@ -12,6 +12,7 @@ const LINKS = [
   ['/exam', 'Mock exam'],
   ['/discover', 'Discover'],
   ['/lab-prep', 'Lab Prep'],
+  ['/premium', 'Plus'],
   ['/archive', 'Archive'],
   ['/stats', 'Progress'],
 ];

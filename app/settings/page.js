@@ -7,6 +7,7 @@ import { useAuth } from '@/lib/useAuth';
 import { useToast } from '@/components/Toast';
 import LoadError from '@/components/LoadError';
 import { withTimeout } from '@/lib/net';
+import { isLaunchTrialActive } from '@/lib/premium';
 
 export default function SettingsPage() {
   const { user, loading: authLoading } = useAuth();
@@ -43,6 +44,11 @@ export default function SettingsPage() {
   const [enrollCode, setEnrollCode] = useState('');
   const [mfaBusy, setMfaBusy] = useState(false);
   const [mfaErr, setMfaErr] = useState('');
+
+  // Reclipse Plus status — separate from the launch trial, which covers
+  // everyone regardless of this. Kept lightweight here; the actual
+  // checkout/billing-portal flow lives on /premium.
+  const [premiumRealSub, setPremiumRealSub] = useState(null);
 
   useEffect(() => {
     if (!user) return;
@@ -113,6 +119,11 @@ export default function SettingsPage() {
       setMfaEnabled(Boolean(totp));
       setMfaFactorId(totp?.id || null);
     })();
+  }, [user]);
+
+  useEffect(() => {
+    if (!user) return;
+    supabase.rpc('has_premium_access').then(({ data, error: rpcError }) => setPremiumRealSub(rpcError ? false : Boolean(data)));
   }, [user]);
 
   const refLink = refCode && typeof window !== 'undefined'
@@ -275,6 +286,20 @@ export default function SettingsPage() {
         <button className="btn btn--primary" style={{ alignSelf: 'flex-start' }} onClick={saveName} disabled={saving}>
           {saving && <span className="spinner" />}Save
         </button>
+      </div>
+
+      <div className="card u-mb-5">
+        <div style={{ fontWeight: 650, marginBottom: 'var(--s-1)' }}>Reclipse Plus</div>
+        <p className="small muted u-mb-3">
+          {premiumRealSub === true
+            ? 'You’re subscribed — unlimited daily generations, a higher monthly card budget, and Lab Prep.'
+            : isLaunchTrialActive()
+            ? 'You have full access for free during our launch period.'
+            : 'Upgrade for unlimited daily generations, more flashcards a month, and the Lab Prep AI chat.'}
+        </p>
+        <a href="/premium" className="btn btn--ghost">
+          {premiumRealSub === true ? 'Manage billing' : 'View Reclipse Plus'}
+        </a>
       </div>
 
       <div className="card">

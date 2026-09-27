@@ -11,6 +11,8 @@ const NAV = [
   ['New study set', '/upload'],
   ['Mock exam', '/exam'],
   ['Discover', '/discover'],
+  ['Lab Prep', '/lab-prep'],
+  ['Reclipse Plus', '/premium'],
   ['Campus Archive', '/archive'],
   ['Syllabus & reminders', '/syllabus'],
   ['Progress', '/stats'],
