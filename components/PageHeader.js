@@ -1,10 +1,10 @@
 'use client';
 
-// Per-page identity: each page passes an icon + accent so it's instantly
-// recognizable. Premium base, playful colored icon tile. Accent is a CSS var
-// scope so page-specific elements can pick it up.
-export default function PageHeader({ icon, title, subtitle, accent = 'violet', action, children }) {
-  const c = ACCENTS[accent] || ACCENTS.violet;
+// Per-page identity: each page passes an icon + title. The icon tile is a
+// flat neutral tile (no per-page accent color) — restrained, not colorful.
+// `accent` is accepted for backward compatibility but no longer varies.
+export default function PageHeader({ icon, title, subtitle, accent, action, children }) {
+  const c = ACCENTS.neutral;
   return (
     <div className="ph" style={{ '--pa': c.solid, '--pa-soft': c.soft, '--pa-ink': c.ink }}>
       <div className="ph__row">
@@ -22,15 +22,10 @@ export default function PageHeader({ icon, title, subtitle, accent = 'violet', a
   );
 }
 
+// All accents collapse to one neutral tile — the old violet/blue/teal/green/
+// amber/pink/orange/indigo map is gone; every page reads the same tokens.
 export const ACCENTS = {
-  violet: { solid: '#7C3AED', soft: '#EDE9FE', ink: '#5B21B6' },
-  blue:   { solid: '#2563EB', soft: '#DBEAFE', ink: '#1E40AF' },
-  teal:   { solid: '#0D9488', soft: '#CCFBF1', ink: '#0F766E' },
-  green:  { solid: '#059669', soft: '#D1FAE5', ink: '#047857' },
-  amber:  { solid: '#D97706', soft: '#FEF3C7', ink: '#B45309' },
-  pink:   { solid: '#DB2777', soft: '#FCE7F3', ink: '#BE185D' },
-  orange: { solid: '#EA580C', soft: '#FFEDD5', ink: '#C2410C' },
-  indigo: { solid: '#4F46E5', soft: '#E0E7FF', ink: '#3730A3' },
+  neutral: { solid: 'var(--ink)', soft: 'var(--violet-100)', ink: 'var(--ink)' },
 };
 
 // Shared icon set — stroke icons, consistent weight, distinct per page.
@@ -46,6 +41,6 @@ export const ICONS = {
   stats: P(<><path d="M3 3v18h18"/><path d="m7 15 3-4 3 2 4-6"/></>),
   calendar: P(<><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></>),
   labPrep: P(<><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M8 10h8M8 6.5h5"/></>),
-  plus: P(<><path d="m12 2 2.4 6.6L21 11l-6.6 2.4L12 20l-2.4-6.6L3 11l6.6-2.4L12 2Z"/></>),
+  plus: P(<><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></>),
   settings: P(<><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></>),
 };

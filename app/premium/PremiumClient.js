@@ -10,8 +10,8 @@ import {
 } from '@/lib/premium';
 
 const BENEFITS = [
-  'No daily limit on generating study sets — the free plan allows 1 per day',
-  'Up to 2,700 flashcards a month (free: 900) — about 90 generations’ worth',
+  'No daily limit on generating study sets',
+  'Up to 2,700 flashcards a month — about 90 generations’ worth',
   'Lab Prep AI chat: turn a deck or your notes into lab-style practice problems, with hints and worked solutions',
 ];
 
@@ -77,7 +77,7 @@ export default function PremiumClient() {
   return (
     <main className="page page--narrow">
       <PageHeader accent="violet" icon={ICONS.plus} title="Reclipse Plus"
-        subtitle="Unlimited-pace studying and Lab Prep, for students who want more than the free plan." />
+        subtitle="Unlimited-pace studying and Lab Prep." />
 
       {trialActive && (
         <div className="alert alert--note u-mb-5">

@@ -246,8 +246,8 @@ export default function StatsPage() {
               <div className="bar-row__track weak-row__track">
                 <div className="bar-row__fill weak-row__fill" style={{
                   width: `${Math.max(w.accuracy, 12)}%`,
-                  background: w.accuracy < 50 ? 'var(--error)' : w.accuracy < 75 ? 'var(--yellow-400)' : 'var(--violet-600)',
-                  color: w.accuracy < 50 ? '#fff' : w.accuracy < 75 ? 'var(--ink)' : '#fff',
+                  background: w.accuracy < 50 ? 'var(--ink)' : w.accuracy < 75 ? 'var(--violet-600)' : 'var(--violet-200)',
+                  color: w.accuracy < 75 ? '#fff' : 'var(--ink)',
                 }}>{w.accuracy}%</div>
               </div>
               <a className="btn btn--ghost weak-row__btn" href={`/study?deck=${w.id}`}>Study</a>

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import PageHeader, { ICONS, ACCENTS } from '@/components/PageHeader';
+import PageHeader, { ICONS } from '@/components/PageHeader';
 import { supabase } from '@/lib/supabaseClient';
 import { withTimeout } from '@/lib/net';
 import Mascot from '@/components/Mascot';
@@ -107,7 +107,7 @@ export default function ArchiveClient() {
             </p>
           </div>
           <button className="btn btn--page" disabled={busy}
-                  style={{ '--pa': ACCENTS.amber.ink }} onClick={() => membershipAction(() => startArchiveCheckout())}>
+                  onClick={() => membershipAction(() => startArchiveCheckout())}>
             {busy ? 'Opening…' : `Get access — ${formatArchivePrice(price)}`}
           </button>
         </div>

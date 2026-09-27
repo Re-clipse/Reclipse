@@ -2,7 +2,6 @@ import { Suspense } from 'react';
 import { Inter } from 'next/font/google';
 import './globals.css';
 import Nav from '@/components/Nav';
-import AmbientBg from '@/components/AmbientBg';
 import { ToastProvider } from '@/components/Toast';
 import { CelebrateProvider } from '@/components/Celebrate';
 import CommandBar from '@/components/CommandBar';
@@ -62,7 +61,7 @@ const jsonLd = {
 export const viewport = {
   width: 'device-width',
   initialScale: 1,
-  themeColor: '#6D28D9',
+  themeColor: '#0A0A0A',
 };
 
 // Self-hosted at build time via next/font — no runtime request to Google's
@@ -91,7 +90,6 @@ export default function RootLayout({ children }) {
       <body className={inter.className}>
         <CelebrateProvider>
         <ToastProvider>
-          <AmbientBg />
           <Nav />
           <CommandBar />
           <Suspense fallback={null}><ReferralCapture /></Suspense>

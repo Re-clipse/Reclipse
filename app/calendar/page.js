@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import PageHeader, { ICONS, ACCENTS } from '@/components/PageHeader';
+import PageHeader, { ICONS } from '@/components/PageHeader';
 import { supabase } from '@/lib/supabaseClient';
 import { useAuth } from '@/lib/useAuth';
 import { useToast } from '@/components/Toast';
@@ -14,10 +14,9 @@ import { upcomingLabOccurrences } from '@/lib/labSchedule';
 import LabRemindersModal from '@/components/LabRemindersModal';
 
 const TYPE_LABEL = { exam: 'Exam', quiz: 'Quiz', lab: 'Lab', assignment: 'Assignment', other: 'Date' };
-// Type dot is independent of the course's accent color, so an event reads as
-// "colour-coded by course AND type" — course on the left border, type as the dot.
-const TYPE_DOT = { exam: '#DC2626', quiz: '#D97706', lab: '#0D9488', assignment: '#2563EB', other: '#6B7280' };
-const ACCENT_CYCLE = ['green', 'blue', 'amber', 'pink', 'teal', 'orange', 'indigo'];
+// Monochrome: event type is shown by the dot's shade (darkest = highest
+// stakes), not by hue — courses no longer get a rainbow color cycle either.
+const TYPE_DOT = { exam: '#0A0A0A', quiz: '#4A4A52', lab: '#8A8A93', assignment: '#4A4A52', other: '#C7C7CE' };
 // Only exams/quizzes get an auto-generated spaced study plan.
 const PLANNABLE_TYPES = ['exam', 'quiz'];
 
@@ -46,8 +45,8 @@ function formatAgendaDate(dateStr) {
   return new Date(`${dateStr}T00:00:00`).toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' });
 }
 
-function courseAccentHex(courseColor, courseId) {
-  return ACCENTS[courseColor.get(courseId) || 'violet']?.solid || '#7C3AED';
+function courseAccentHex() {
+  return '#8A8A93';
 }
 
 export default function CalendarPage() {
@@ -124,11 +123,9 @@ export default function CalendarPage() {
     generatePlans(needsPlan);
   }, [status, events, sessions, generatePlans]);
 
-  const courseColor = useMemo(() => {
-    const map = new Map();
-    courses.forEach((c, i) => map.set(c.id, ACCENT_CYCLE[i % ACCENT_CYCLE.length]));
-    return map;
-  }, [courses]);
+  // Courses no longer get a per-course accent color (monochrome palette);
+  // this map is kept only so CalPill/AgendaView's props stay unchanged.
+  const courseColor = useMemo(() => new Map(), [courses]);
 
   const itemsByDate = useMemo(() => {
     const map = new Map();

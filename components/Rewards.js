@@ -29,7 +29,7 @@ export function GoalRing({ done, goal, pct }) {
       <svg width="84" height="84" viewBox="0 0 84 84">
         <defs>
           <linearGradient id="goalgrad" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor="#7C3AED" /><stop offset="100%" stopColor="#FACC15" />
+            <stop offset="0%" stopColor="#1A1A1E" /><stop offset="100%" stopColor="#4A4A52" />
           </linearGradient>
         </defs>
         <circle className="goal-ring__track" cx="42" cy="42" r={R} strokeWidth="8" fill="none" />

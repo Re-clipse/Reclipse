@@ -8,14 +8,12 @@ import { streakFrom } from '@/lib/stats';
 import { cardsToday } from '@/lib/rewards';
 import { GoalRing } from '@/components/Rewards';
 import Mascot from '@/components/Mascot';
-import PageHeader, { ICONS, ACCENTS } from '@/components/PageHeader';
+import PageHeader, { ICONS } from '@/components/PageHeader';
 import Modal from '@/components/Modal';
 import LoadError from '@/components/LoadError';
 import { withTimeout } from '@/lib/net';
 import { localIso } from '@/lib/dates';
 
-// Course spine colors cycle through the shared per-page accent palette.
-const ACCENT_CYCLE = ['green', 'blue', 'amber', 'pink', 'teal', 'orange', 'indigo'];
 
 export default function DecksPage() {
   const { user, loading: authLoading } = useAuth();
@@ -175,19 +173,19 @@ export default function DecksPage() {
             <div className="hero-strip__divider" aria-hidden="true" />
             <div className="chips">
               <div className={`chip-stat${streak > 0 ? ' chip-stat--hot' : ''}`}>
-                <div className="chip-stat__ico" style={{ background: '#FEF3C7', color: '#CA8A04' }}>
+                <div className="chip-stat__ico" style={{ background: 'var(--violet-100)', color: 'var(--ink-2)' }}>
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5Z"/></svg>
                 </div>
                 <div><div className="chip-stat__n">{streak}</div><div className="chip-stat__l">day streak</div></div>
               </div>
               <div className="chip-stat">
-                <div className="chip-stat__ico" style={{ background: '#EDE9FE', color: '#6D28D9' }}>
+                <div className="chip-stat__ico" style={{ background: 'var(--violet-100)', color: 'var(--ink-2)' }}>
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/></svg>
                 </div>
                 <div><div className="chip-stat__n">{decks.length}</div><div className="chip-stat__l">decks</div></div>
               </div>
               <div className="chip-stat">
-                <div className="chip-stat__ico" style={{ background: '#DCFCE7', color: '#059669' }}>
+                <div className="chip-stat__ico" style={{ background: 'var(--violet-100)', color: 'var(--ink-2)' }}>
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
                 </div>
                 <div><div className="chip-stat__n">{due}</div><div className="chip-stat__l">cards due</div></div>
@@ -285,9 +283,6 @@ export default function DecksPage() {
           {visible.map((d, i) => {
             const cards = d.flashcards?.[0]?.count ?? 0;
             const quiz = d.quiz_questions?.[0]?.count ?? 0;
-            const courseIdx = courses.findIndex((c) => c.id === d.course_id);
-            const course = courseIdx >= 0 ? courses[courseIdx] : null;
-            const accent = course ? ACCENTS[ACCENT_CYCLE[courseIdx % ACCENT_CYCLE.length]] : ACCENTS.violet;
             const prog = progress[d.id] || { due: 0, learned: 0 };
             const learned = Math.min(prog.learned, cards);
             const pct = cards ? Math.round((learned / cards) * 100) : 0;
@@ -298,7 +293,7 @@ export default function DecksPage() {
               : `${cards - learned} new`;
             return (
               <div key={d.id} className="card deck-tile rise"
-                   style={{ '--spine': accent.solid, animationDelay: `${Math.min(i, 8) * 40}ms` }}>
+                   style={{ animationDelay: `${Math.min(i, 8) * 40}ms` }}>
                 <div className="deck-tile__menu">
                   <a href={`/deck/${d.id}`} className="deck-tile__icon" aria-label={`Open ${d.title}`} title="Open">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>

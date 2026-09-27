@@ -11,7 +11,10 @@ import { createContext, useCallback, useContext, useRef, useState } from 'react'
 const CelebrateCtx = createContext({ burst: () => {}, cannon: () => {} });
 export const useCelebrate = () => useContext(CelebrateCtx);
 
-const COLORS = ['#7C3AED', '#A78BFA', '#FACC15', '#FB923C', '#34D399', '#F472B6'];
+// Monochrome confetti — black/white/gray only, no brand color, per the
+// restrained visual direction. The celebration itself (fires on real
+// accomplishments) is unchanged; only its palette is.
+const COLORS = ['#0A0A0A', '#3A3A3E', '#6B6B70', '#9B9B9B', '#C7C7CE', '#FFFFFF'];
 
 // Confetti is intentionally always-on per product decision — a brief, one-shot
 // celebration on real accomplishment, not continuous motion.
