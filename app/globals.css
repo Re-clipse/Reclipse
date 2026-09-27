@@ -76,7 +76,7 @@ html { background: var(--white); }
 body {
   background: transparent;
   color: var(--ink);
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: var(--font-geist-sans), -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   font-size: var(--text-base);
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
@@ -171,16 +171,12 @@ button, input, textarea { font: inherit; color: inherit; }
   border: 1px solid var(--line);
   border-radius: var(--r-lg);
   padding: var(--s-5);
-  box-shadow: var(--shadow-sm);
-  transition: box-shadow var(--t-base) var(--ease), transform var(--t-base) var(--ease),
-              border-color var(--t-base) var(--ease);
+  transition: border-color var(--t-base) var(--ease);
 }
 .card--link { display: block; color: inherit; cursor: pointer; }
 .card--link:hover {
   text-decoration: none;
-  border-color: var(--violet-300);
-  box-shadow: var(--shadow-lg);
-  transform: translateY(-2px);
+  border-color: var(--ink-2);
 }
 
 /* ---------- Forms ---------- */
@@ -268,7 +264,6 @@ button, input, textarea { font: inherit; color: inherit; }
 @keyframes shimmer { 0%, 100% { opacity: 1; } 50% { opacity: .6; } }
 
 /* Respect users who prefer less motion */
-/* reduced-motion overrides removed — motion kept on by product decision */
 
 /* ---------- Mobile ---------- */
 @media (max-width: 640px) {
@@ -848,7 +843,6 @@ button, input, textarea { font: inherit; color: inherit; }
   from { opacity: 0; transform: translateY(12px) scale(.96); }
   to { opacity: 1; transform: none; }
 }
-/* reduced-motion overrides removed — motion kept on by product decision */
 
 /* ---------- Command bar / shortcuts ---------- */
 .cmd-bg {
@@ -926,14 +920,14 @@ body { letter-spacing: -0.011em; }
 h1, h2, h3, h4 { letter-spacing: -0.025em; font-weight: 720; }
 h1 { font-weight: 780; }
 
-/* Cards: flatter default, crisp 1px border, lift only on interaction */
+/* Cards: flat, crisp 1px border — no shadow, border-color carries hover/interaction */
 .card {
   border-radius: var(--r-lg);
-  box-shadow: var(--shadow-xs);
+  box-shadow: none;
   border-color: var(--line);
 }
-.card--link { transition: transform var(--t-base) var(--ease-out), box-shadow var(--t-base) var(--ease-out), border-color var(--t-base) var(--ease); }
-.card--link:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); border-color: var(--violet-200); }
+.card--link { transition: border-color var(--t-base) var(--ease); }
+.card--link:hover { border-color: var(--ink-2); }
 
 /* Buttons: tighter, snappier, springy press */
 .btn {
@@ -973,7 +967,6 @@ h1 { font-weight: 780; }
 /* Section headings a touch tighter */
 .section__head h2 { letter-spacing: -0.03em; }
 
-/* reduced-motion overrides removed — motion kept on by product decision */
 
 /* ---------- Premium study flip ---------- */
 .flip { perspective: 1600px; }
@@ -1027,7 +1020,6 @@ h1 { font-weight: 780; }
 }
 .done__ring { animation: score-in var(--t-slow) var(--ease-spring) both; }
 
-/* reduced-motion overrides removed — motion kept on by product decision */
 
 /* ---------- Refined empty states ---------- */
 .empty {
@@ -1073,7 +1065,6 @@ h1 { font-weight: 780; }
 .nav__link:hover::after { transform: scaleX(1); }
 .nav__link--active::after { transform: scaleX(1); }
 
-/* reduced-motion overrides removed — motion kept on by product decision */
 
 /* ---------- Premium hero ---------- */
 .hero { padding-top: var(--s-9); }
@@ -1103,7 +1094,6 @@ h1 { font-weight: 780; }
 }
 .cta-band h2 { letter-spacing: -0.035em; }
 
-/* reduced-motion overrides removed — motion kept on by product decision */
 
 /* ============================================================
    PHASE 6b — detail refinement
@@ -1157,7 +1147,6 @@ body, .card, .nav, .input, .textarea, .btn, .flip__face {
   transition-duration: var(--t-base);
   transition-timing-function: var(--ease);
 }
-/* reduced-motion overrides removed — motion kept on by product decision */
 
 /* ============================================================
    PHASE 6c — dark mode refinement
@@ -1373,7 +1362,6 @@ body, .card, .nav, .input, .textarea, .btn, .flip__face {
   40% { opacity: 1; }
   100% { opacity: 0; }
 }
-/* reduced-motion overrides removed — motion kept on by product decision */
 
 /* ============================================================
    FEEDBACK STATES — plain, fast, no bounce
@@ -1465,7 +1453,6 @@ body, .card, .nav, .input, .textarea, .btn, .flip__face {
 @media (max-width: 640px) {
   .ach-grid { grid-template-columns: 1fr; }
 }
-/* reduced-motion overrides removed — motion kept on by product decision */
 
 /* ============================================================
    PER-PAGE HEADER IDENTITY
@@ -1502,7 +1489,6 @@ body, .card, .nav, .input, .textarea, .btn, .flip__face {
   .ph__icon { width: 48px; height: 48px; border-radius: 13px; }
   .ph__title { font-size: var(--text-2xl); }
 }
-/* reduced-motion overrides removed — motion kept on by product decision */
 
 /* Ambient per-page floating shapes removed — decorative colored motion
    doesn't fit the monochrome/editorial direction. */
@@ -1970,3 +1956,23 @@ body, .card, .nav, .input, .textarea, .btn, .flip__face {
 .consent-banner p { flex: 1; min-width: 200px; font-size: var(--text-sm); color: var(--ink-2); margin: 0; }
 .consent-banner a { color: var(--violet-700); }
 @media (max-width: 480px) { .consent-banner { flex-direction: column; align-items: stretch; } }
+
+/* ---------- Reduced motion ----------
+   A single global rule, not the ~10 scattered per-component overrides this
+   file used to carry (each since replaced with a "removed — product
+   decision" comment). Kills decorative animation/transition for anyone who
+   asks for it; loading spinners and the low-time exam-timer pulse are
+   exempted since they signal an ongoing or urgent state, not delight — per
+   design-motion-principles' functional-vs-decorative distinction. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .spinner, .working__ring, .timer--low {
+    animation-duration: revert !important;
+    animation-iteration-count: revert !important;
+  }
+}

@@ -1,5 +1,5 @@
 import { Suspense } from 'react';
-import { Inter } from 'next/font/google';
+import { GeistSans } from 'geist/font/sans';
 import './globals.css';
 import Nav from '@/components/Nav';
 import { ToastProvider } from '@/components/Toast';
@@ -64,11 +64,11 @@ export const viewport = {
   themeColor: '#0A0A0A',
 };
 
-// Self-hosted at build time via next/font — no runtime request to Google's
-// servers (and no visitor IP/user-agent sent there on every page load, which
-// the old <link> tags below did). This is also what makes the Privacy and
-// Cookie policies' "only four third parties" claim actually true.
-const inter = Inter({ subsets: ['latin'], weight: ['400', '500', '600', '700', '800'], display: 'swap' });
+// Self-hosted at build time (the `geist` package ships static font files,
+// same as next/font/google did) — no runtime request to Google's servers
+// and no visitor IP/user-agent sent there on every page load. This is also
+// what makes the Privacy and Cookie policies' "only four third parties"
+// claim actually true.
 
 // Applied before paint so dark-mode users never see a white flash.
 const themeScript = `
@@ -87,7 +87,7 @@ export default function RootLayout({ children }) {
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       </head>
-      <body className={inter.className}>
+      <body className={GeistSans.className}>
         <CelebrateProvider>
         <ToastProvider>
           <Nav />
