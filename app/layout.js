@@ -1,5 +1,5 @@
 import { Suspense } from 'react';
-import { IBM_Plex_Sans, IBM_Plex_Mono } from 'next/font/google';
+import { IBM_Plex_Sans, IBM_Plex_Mono, Archivo, Caveat } from 'next/font/google';
 import './globals.css';
 import Nav from '@/components/Nav';
 import { ToastProvider } from '@/components/Toast';
@@ -70,6 +70,10 @@ export const viewport = {
 // Cookie policies' "only four third parties" claim actually true.
 const plexSans = IBM_Plex_Sans({ subsets: ['latin'], weight: ['400', '500', '600', '700'], display: 'swap', variable: '--font-sans' });
 const plexMono = IBM_Plex_Mono({ subsets: ['latin'], weight: ['400', '500'], display: 'swap', variable: '--font-mono' });
+// Poster-style display face for big headlines (expanded width axis), and a
+// handwriting face used only for a few margin notes on the homepage.
+const archivo = Archivo({ subsets: ['latin'], axes: ['wdth'], display: 'swap', variable: '--font-display' });
+const caveat = Caveat({ subsets: ['latin'], weight: ['600'], display: 'swap', variable: '--font-hand' });
 
 // Applied before paint so dark-mode users never see a white flash.
 const themeScript = `
@@ -88,7 +92,7 @@ export default function RootLayout({ children }) {
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       </head>
-      <body className={`${plexSans.variable} ${plexMono.variable}`}>
+      <body className={`${plexSans.variable} ${plexMono.variable} ${archivo.variable} ${caveat.variable}`}>
         <CelebrateProvider>
         <ToastProvider>
           <Nav />
