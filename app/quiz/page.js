@@ -173,7 +173,7 @@ function QuizInner() {
 
           <ReferralPrompt code={referral?.code} link={referral?.link}
             title="Studying with classmates? Invite them"
-            note="Share your link — every friend who signs up raises your monthly AI-generation limit by 5." />
+            note="Share your link: every friend who signs up raises your monthly AI-generation limit by 5." />
         </main>
       );
     }
@@ -247,8 +247,8 @@ function QuizInner() {
             return (
               <button key={idx} className={cls} onClick={(ev) => choose(idx, ev)} disabled={answered}>
                 <span className="option__key">{KEYS[idx]}</span><span>{opt}</span>
-                {answered && idx === q.correct_index && <span className="sr-only"> — correct answer</span>}
-                {answered && idx === picked && idx !== q.correct_index && <span className="sr-only"> — your answer, incorrect</span>}
+                {answered && idx === q.correct_index && <span className="sr-only">, correct answer</span>}
+                {answered && idx === picked && idx !== q.correct_index && <span className="sr-only">, your answer, incorrect</span>}
               </button>
             );
           })}

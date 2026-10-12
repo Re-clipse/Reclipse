@@ -34,7 +34,7 @@ export default function DiscoverClient() {
       <div className="page__head">
         <div>
           <h1>Campus popular</h1>
-          <p>The most-studied shared decks across every Reclipse user. Browsing is anonymous — no login needed, and we don&apos;t show who shared what.</p>
+          <p>The most-studied shared decks across every Reclipse user. Browsing is anonymous: no login needed, and we don&apos;t show who shared what.</p>
         </div>
       </div>
 

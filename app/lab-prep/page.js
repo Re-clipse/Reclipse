@@ -160,11 +160,11 @@ function LabPrepInner() {
           <h2 style={{ fontSize: 'var(--text-xl)' }}>Reclipse Plus feature</h2>
           <p className="muted" style={{ marginTop: 'var(--s-3)' }}>
             Lab Prep generates practice problems from a deck or your own notes, then walks through
-            hints, worked solutions, and harder variants with you — available on Reclipse Plus.
+            hints, worked solutions, and harder variants with you. Available on Reclipse Plus.
           </p>
           <button className="btn btn--primary btn--lg" style={{ marginTop: 'var(--s-5)' }} disabled={upgrading} onClick={upgrade}>
             {upgrading && <span className="spinner" />}
-            {upgrading ? 'Redirecting…' : `Upgrade to Reclipse Plus${price ? ` — ${formatPremiumPrice(price)}` : ''}`}
+            {upgrading ? 'Redirecting…' : `Upgrade to Reclipse Plus${price ? ` · ${formatPremiumPrice(price)}` : ''}`}
           </button>
         </div>
       </main>
@@ -189,7 +189,7 @@ function LabPrepInner() {
         </div>
 
         <div className="chat__composer">
-          <input ref={inputRef} className="input" placeholder={atLimit ? 'Session limit reached — start a new one to continue.' : 'Ask for a hint, a solution, or a harder version…'}
+          <input ref={inputRef} className="input" placeholder={atLimit ? 'Session limit reached. Start a new one to continue.' : 'Ask for a hint, a solution, or a harder version…'}
                  value={draft} disabled={sending || atLimit}
                  onChange={(e) => setDraft(e.target.value)}
                  onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }} />
@@ -207,7 +207,7 @@ function LabPrepInner() {
 
       {preCourse && !preDeckId && (
         <div className="alert alert--note" style={{ marginBottom: 'var(--s-4)' }}>
-          Prepping for {preCourse}&apos;s lab — add that course&apos;s notes or pick a matching deck below.
+          Prepping for {preCourse}&apos;s lab. Add that course&apos;s notes or pick a matching deck below.
         </div>
       )}
 
@@ -252,7 +252,7 @@ function LabPrepInner() {
                 <div className="drop__title">
                   {extracting ? 'Reading your file…' : fileName ? `Loaded: ${fileName}` : 'Drop a file here, or click to browse'}
                 </div>
-                <div className="drop__hint">PDF, text file, or a photo — or just paste below.</div>
+                <div className="drop__hint">PDF, text file, or a photo. You can also paste below.</div>
               </div>
             </div>
             <div className="field">

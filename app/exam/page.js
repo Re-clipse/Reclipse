@@ -121,7 +121,7 @@ export default function ExamPage() {
         ) : decks.length === 0 ? (
           <div className="empty">
             <h3>No quiz questions yet</h3>
-            <p>Create a study set first — it&apos;ll show up here as a deck. Most sets include quiz questions, but not all do.</p>
+            <p>Create a study set first. It&apos;ll show up here as a deck. Most sets include quiz questions, but not all do.</p>
             <a href="/upload" className="btn btn--primary">Create a study set</a>
           </div>
         ) : (

@@ -10,8 +10,8 @@ import {
 } from '@/lib/premium';
 
 const BENEFITS = [
-  'No daily limit on generating study sets — the free plan allows 1 per day',
-  'Up to 2,700 flashcards a month (free: 900) — about 90 generations’ worth',
+  'No daily limit on generating study sets (the free plan allows 1 per day)',
+  'Up to 2,700 flashcards a month, about 90 generations’ worth (free: 900)',
   'Lab Prep AI chat: turn a deck or your notes into lab-style practice problems, with hints and worked solutions',
 ];
 
@@ -81,7 +81,7 @@ export default function PremiumClient() {
 
       {trialActive && (
         <div className="alert alert--note u-mb-5">
-          Everyone gets full Reclipse Plus access free right now, during our launch period — no
+          Everyone gets full Reclipse Plus access free right now, during our launch period. No
           subscription needed yet.{configured && ' You can still subscribe below to lock in support early.'}
         </div>
       )}
@@ -100,7 +100,7 @@ export default function PremiumClient() {
         <div className="card center u-p-6">
           <h2 style={{ fontSize: 'var(--text-xl)' }}>Coming soon</h2>
           <p className="muted u-mt-3">
-            Paid subscriptions aren&apos;t open yet — we&apos;re still setting up billing.
+            Paid subscriptions aren&apos;t open yet. We&apos;re still setting up billing.
             {trialActive && ' Everyone has full access in the meantime.'}
           </p>
         </div>
@@ -143,10 +143,10 @@ export default function PremiumClient() {
           {error && <div role="alert" className="alert alert--error u-mt-5">{error}</div>}
 
           <button className="btn btn--primary btn--lg btn--block u-mt-6" disabled={busy} onClick={subscribe}>
-            {busy && <span className="spinner" />}{busy ? 'Redirecting…' : `Subscribe — ${formatPremiumPrice(price)}`}
+            {busy && <span className="spinner" />}{busy ? 'Redirecting…' : `Subscribe · ${formatPremiumPrice(price)}`}
           </button>
           <p className="small muted u-mt-3" style={{ textAlign: 'center' }}>
-            Cancel any time — you keep access through the end of the period you&apos;ve already paid for.
+            Cancel any time. You keep access through the end of the period you&apos;ve already paid for.
           </p>
         </div>
       )}

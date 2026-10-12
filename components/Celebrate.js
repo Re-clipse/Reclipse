@@ -11,7 +11,7 @@ import { createContext, useCallback, useContext, useRef, useState } from 'react'
 const CelebrateCtx = createContext({ burst: () => {}, cannon: () => {} });
 export const useCelebrate = () => useContext(CelebrateCtx);
 
-const COLORS = ['#7C3AED', '#A78BFA', '#FACC15', '#FB923C', '#34D399', '#F472B6'];
+const COLORS = ['#FFE066', '#1D1C19', '#B4361E', '#2F6B3F', '#2F5F8A', '#F4F1EA'];
 
 // Confetti is intentionally always-on per product decision — a brief, one-shot
 // celebration on real accomplishment, not continuous motion.

@@ -45,7 +45,7 @@ export default function JoinCollabPage() {
 
   const message = status === 'redirecting'
     ? 'You need a free Reclipse account to join this shared deck. Taking you to log in…'
-    : 'Joining this shared deck — you’ll be able to view and edit its flashcards…';
+    : 'Joining this shared deck. You’ll be able to view and edit its flashcards…';
 
   return (
     <main className="page page--narrow">

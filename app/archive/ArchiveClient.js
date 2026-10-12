@@ -90,7 +90,7 @@ export default function ArchiveClient() {
           <div className="member-card__text">
             <strong>Coming soon</strong>
             <p className="small muted">
-              Membership isn&apos;t open yet — we&apos;re still setting up the Archive. You can browse
+              Membership isn&apos;t open yet. We&apos;re still setting up the Archive. You can browse
               what&apos;s been shared below in the meantime.
             </p>
           </div>
@@ -103,12 +103,12 @@ export default function ArchiveClient() {
             <strong>Study every set in the archive</strong>
             <p className="small muted">
               {formatArchivePrice(price)} unlocks all the flashcards and quizzes below. Cancel any
-              time — you keep access through the end of the period you&apos;ve already paid for.
+              time. You keep access through the end of the period you&apos;ve already paid for.
             </p>
           </div>
           <button className="btn btn--page" disabled={busy}
                   style={{ '--pa': ACCENTS.amber.ink }} onClick={() => membershipAction(() => startArchiveCheckout())}>
-            {busy ? 'Opening…' : `Get access — ${formatArchivePrice(price)}`}
+            {busy ? 'Opening…' : `Get access · ${formatArchivePrice(price)}`}
           </button>
         </div>
       )}
@@ -122,7 +122,7 @@ export default function ArchiveClient() {
       {justSubscribed && member && (
         <ReferralPrompt code={referral?.code} link={referral?.link}
           title="Know someone who'd want this too?"
-          note="Share your link — every friend who signs up raises your monthly AI-generation limit by 5." />
+          note="Share your link: every friend who signs up raises your monthly AI-generation limit by 5." />
       )}
 
       <form className="toolbar" onSubmit={(e) => { e.preventDefault(); load(q); }}>

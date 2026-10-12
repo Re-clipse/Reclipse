@@ -262,7 +262,7 @@ function UploadInner() {
             </button>
             <a href="/decks" className="btn btn--ghost btn--lg">Cancel</a>
           </div>
-          <p className="small muted">Up to 5 study sets per day — you&apos;ll get a clear message here if you hit the limit, and it resets the next day.</p>
+          <p className="small muted">Up to 5 study sets per day. You&apos;ll get a clear message here if you hit the limit, and it resets the next day.</p>
         </form>
 
         <aside className="card up-side">

@@ -1,15 +1,14 @@
 'use client';
 
-// Per-page identity: each page passes an icon + accent so it's instantly
-// recognizable. Premium base, playful colored icon tile. Accent is a CSS var
-// scope so page-specific elements can pick it up.
-export default function PageHeader({ icon, title, subtitle, accent = 'violet', action, children }) {
-  const c = ACCENTS[accent] || ACCENTS.violet;
+// One plain header for every page: title, optional subtitle, optional action.
+// Pages still pass `icon` and `accent` from the old per-page color scheme;
+// they're accepted and ignored so the header stays consistent everywhere.
+// eslint-disable-next-line no-unused-vars
+export default function PageHeader({ icon, title, subtitle, accent, action, children }) {
   return (
-    <div className="ph" style={{ '--pa': c.solid, '--pa-soft': c.soft, '--pa-ink': c.ink }}>
+    <div className="ph">
       <div className="ph__row">
         <div className="ph__lead">
-          <div className="ph__icon" aria-hidden="true">{icon}</div>
           <div>
             <h1 className="ph__title">{title}</h1>
             {subtitle && <p className="ph__sub">{subtitle}</p>}
@@ -22,15 +21,18 @@ export default function PageHeader({ icon, title, subtitle, accent = 'violet', a
   );
 }
 
+// Course colors, like a set of colored pencils: muted enough to sit on paper,
+// distinct enough to tell courses apart. Keys are kept from the old palette
+// because decks/calendar/archive store and look them up by name.
 export const ACCENTS = {
-  violet: { solid: '#7C3AED', soft: '#EDE9FE', ink: '#5B21B6' },
-  blue:   { solid: '#2563EB', soft: '#DBEAFE', ink: '#1E40AF' },
-  teal:   { solid: '#0D9488', soft: '#CCFBF1', ink: '#0F766E' },
-  green:  { solid: '#059669', soft: '#D1FAE5', ink: '#047857' },
-  amber:  { solid: '#D97706', soft: '#FEF3C7', ink: '#B45309' },
-  pink:   { solid: '#DB2777', soft: '#FCE7F3', ink: '#BE185D' },
-  orange: { solid: '#EA580C', soft: '#FFEDD5', ink: '#C2410C' },
-  indigo: { solid: '#4F46E5', soft: '#E0E7FF', ink: '#3730A3' },
+  violet: { solid: '#3D4A6B', soft: '#E3E6EE', ink: '#2A3550' }, // slate
+  blue:   { solid: '#2F5F8A', soft: '#DFE9F2', ink: '#1F4567' },
+  teal:   { solid: '#2E6E68', soft: '#DCEBE8', ink: '#1F504B' },
+  green:  { solid: '#4A6B2E', soft: '#E4ECDA', ink: '#344D1F' },
+  amber:  { solid: '#9A6A14', soft: '#F3E9D2', ink: '#6E4B0C' },
+  pink:   { solid: '#9B3D5A', soft: '#F2E0E6', ink: '#722A41' },
+  orange: { solid: '#B04A1F', soft: '#F4E2D8', ink: '#843513' },
+  indigo: { solid: '#4B4C8F', soft: '#E4E4F1', ink: '#35366B' },
 };
 
 // Shared icon set — stroke icons, consistent weight, distinct per page.

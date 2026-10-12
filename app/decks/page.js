@@ -181,7 +181,7 @@ export default function DecksPage() {
                 <div><div className="chip-stat__n">{streak}</div><div className="chip-stat__l">day streak</div></div>
               </div>
               <div className="chip-stat">
-                <div className="chip-stat__ico" style={{ background: '#EDE9FE', color: '#6D28D9' }}>
+                <div className="chip-stat__ico" style={{ background: 'var(--tint)', color: 'var(--ink)' }}>
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/></svg>
                 </div>
                 <div><div className="chip-stat__n">{decks.length}</div><div className="chip-stat__l">decks</div></div>
@@ -205,7 +205,7 @@ export default function DecksPage() {
           <div style={{ fontWeight: 650, marginBottom: 'var(--s-2)' }}>Today</div>
           {todaySessions.length > 0 && (
             <p className="small muted" style={{ marginBottom: 'var(--s-2)' }}>
-              Study plan — sessions we auto-scheduled leading up to your upcoming exams.
+              Study plan: sessions we auto-scheduled leading up to your upcoming exams.
             </p>
           )}
           {todaySessions.map((s) => (
@@ -270,7 +270,7 @@ export default function DecksPage() {
               <Mascot mood="happy" size={96} float />
             </div>
             <h3>No study sets yet</h3>
-            <p>Turn your first set of notes into flashcards and a quiz — it only takes a minute.</p>
+            <p>Turn your first set of notes into flashcards and a quiz. It only takes a minute.</p>
             <a href="/upload" className="btn btn--primary btn--lg">Create your first set</a>
           </div>
         ) : (

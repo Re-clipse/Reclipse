@@ -136,7 +136,7 @@ export default function DemoClient() {
             In the real app you&apos;d earn experience points (XP), level up, and unlock achievements for this.
           </p>
           <p className="muted u-mt-2">
-            Flip, recall, quiz, repeat — with your flashcards timed by spaced repetition, so you
+            Flip, recall, quiz, repeat. Your flashcards are timed by spaced repetition, so you
             review exactly what needs it. Ready to try it for real?
           </p>
           <div className="row actions-sm-stack u-row-center u-mt-6">

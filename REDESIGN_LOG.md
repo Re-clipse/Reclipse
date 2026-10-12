@@ -791,3 +791,43 @@ prefers-reduced-motion.
 ## Verification
 - npm run build clean, 25/25 pages; all routes 200; 0 errors after clean rebuild.
 - Confirmed the mid-edit 12-error blip was the webpack hot-reload cache again.
+
+---
+
+# Phase 13: Study desk redesign (Oct 2026)
+
+Goal: stop looking AI-generated. Checked the site against a list of common
+generated-UI tells and removed every one that applied: purple-to-blue gradient,
+gradient hero text, Inter everywhere, glassy cards, a badge above the headline,
+icon boxes in a row, sections fading in on scroll, hover effects that fade
+buttons, em dashes everywhere, generic buzzword copy, low-contrast dark mode.
+
+## Direction
+- Paper, ink and one highlighter. The flashcard is drawn as a real ruled index
+  card (red header line, blue rules). Course colors are muted "colored pencils".
+- IBM Plex Sans for text, IBM Plex Mono for labels and numbers.
+- Flat surfaces, 4 to 8px radii, 1px rules instead of shadows. No glass, glow,
+  blobs or floating shapes (AmbientBg removed from the layout).
+- Motion only where it explains state: card flip, spinners, toasts.
+- Dark mode raised to 7:1 body-text contrast.
+
+## How it's built
+- One layer at the end of `app/globals.css` ("DIRECTION: STUDY DESK"). It
+  remaps the old `--violet-*` tokens to ink/paper so every page changes without
+  per-page edits. The older layers above it are now dead weight and can be
+  deleted in a cleanup pass.
+- `app/page.js` rewritten: the hero card is the real flip with real SM-2
+  intervals from `lib/srs.js`; sections show an actual notes-in/cards-out
+  example, the review schedule, a plain feature list, and one cited study.
+- `PageHeader` is one plain header (no per-page icon tile or rainbow accent).
+- ~70 user-visible em dashes rewritten across pages and legal text.
+- Login pitch, link-share image and unsubscribe page restyled to match.
+- Removed `app/api/debug-env` (temporary route that exposed part of the
+  Anthropic key publicly).
+
+## Verified
+- `next build` clean (46/46 pages), `next lint` clean.
+- Homepage checked in light and dark, desktop and narrow widths; card flip and
+  grade buttons work. Login checked at narrow width.
+- Not yet reviewed screen by screen: the logged-in app pages. They inherit the
+  new tokens, but page-specific leftovers may remain.

@@ -165,7 +165,7 @@ export default function DeckPage() {
     const { collab_id } = await toggleCollab();
     const link = `${window.location.origin}/collab/${collab_id}`;
     try { await navigator.clipboard?.writeText(link); } catch {}
-    toast('Invite link copied — send it to your classmates', 'success');
+    toast('Invite link copied. Send it to your classmates', 'success');
     dismissInvite();
   }
 
@@ -278,7 +278,7 @@ export default function DeckPage() {
           <div>
             <strong>{courseCode ? `Invite your ${courseCode} classmates` : 'Invite classmates to this deck'}</strong>
             <p className="small muted u-mt-1">
-              Turn on collaboration and share a link — anyone with it can add cards to this deck too.
+              Turn on collaboration and share a link. Anyone with it can add cards to this deck too.
             </p>
           </div>
           <div className="row">
@@ -413,7 +413,7 @@ export default function DeckPage() {
               <div>
                 <div className="u-fw-650">Share this deck</div>
                 <p className="small muted">
-                  Anyone with the link can view and copy it, no login needed — and it&apos;ll show up in
+                  Anyone with the link can view and copy it without logging in, and it&apos;ll show up in
                   {' '}<a href="/discover">Campus popular</a> once someone studies it.
                 </p>
               </div>
@@ -467,7 +467,7 @@ export default function DeckPage() {
               <div>
                 <div className="u-fw-650">Share in the Campus Archive</div>
                 <p className="small muted">
-                  Different from Campus popular above — this lists your deck for paying Campus Archive
+                  Different from Campus popular above: this lists your deck for paying Campus Archive
                   members to study. You don&apos;t set a price and don&apos;t get paid for it.
                 </p>
               </div>
@@ -583,7 +583,7 @@ function QuizModal({ question, onCancel, onSave }) {
                     onChange={(e) => setQ(e.target.value)} autoFocus />
         </div>
         <div className="field">
-          <label className="label" id="quiz-options-label">Options — select the correct one</label>
+          <label className="label" id="quiz-options-label">Options (select the correct one)</label>
           <div className="stack" style={{ gap: 'var(--s-2)' }} role="radiogroup" aria-labelledby="quiz-options-label">
             {options.map((opt, i) => (
               <div key={i} className="row" style={{ gap: 'var(--s-2)', alignItems: 'center' }}>

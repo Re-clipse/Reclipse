@@ -32,8 +32,8 @@ export default function Mascot({ mood = 'happy', size = 120, float = false, boun
           <stop offset="100%" stopColor="#FB923C" stopOpacity="0" />
         </radialGradient>
         <linearGradient id={id('body')} x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="#9F7AFA" />
-          <stop offset="100%" stopColor="#6D28D9" />
+          <stop offset="0%" stopColor="#56627F" />
+          <stop offset="100%" stopColor="#2A3550" />
         </linearGradient>
         {/* Thin gold rim, brightest on the lower-right where the "eclipse" light leaks past. */}
         <linearGradient id={id('rim')} x1="0" y1="0" x2="1" y2="1">
@@ -45,8 +45,8 @@ export default function Mascot({ mood = 'happy', size = 120, float = false, boun
           <stop offset="100%" stopColor="#F472B6" stopOpacity="0" />
         </radialGradient>
         <radialGradient id={id('glow')} cx="50%" cy="100%" r="70%">
-          <stop offset="0%" stopColor="#C4B5FD" stopOpacity="0.35" />
-          <stop offset="100%" stopColor="#C4B5FD" stopOpacity="0" />
+          <stop offset="0%" stopColor="#FFE066" stopOpacity="0.35" />
+          <stop offset="100%" stopColor="#FFE066" stopOpacity="0" />
         </radialGradient>
         <clipPath id={id('clip')}><circle cx="54" cy="54" r="38" /></clipPath>
       </defs>
@@ -55,7 +55,7 @@ export default function Mascot({ mood = 'happy', size = 120, float = false, boun
       {parts.sparkles && (
         <g className="mascot__sparkles">
           <path className="mascot__twinkle" d="M92 22l2 5 5 2-5 2-2 5-2-5-5-2 5-2z" fill="#FACC15" />
-          <path className="mascot__twinkle mascot__twinkle--b" d="M14 30l1.5 3.5L19 35l-3.5 1.5L14 40l-1.5-3.5L9 35l3.5-1.5z" fill="#A78BFA" />
+          <path className="mascot__twinkle mascot__twinkle--b" d="M14 30l1.5 3.5L19 35l-3.5 1.5L14 40l-1.5-3.5L9 35l3.5-1.5z" fill="#D96B5F" />
           <path className="mascot__twinkle mascot__twinkle--c" d="M96 62l1.5 3.5L101 67l-3.5 1.5L96 72l-1.5-3.5L91 67l3.5-1.5z" fill="#FB923C" />
         </g>
       )}
@@ -65,7 +65,7 @@ export default function Mascot({ mood = 'happy', size = 120, float = false, boun
 
       {/* Eclipse shadow: a darker crescent, clipped so it stays inside her body. */}
       <g clipPath={`url(#${id('clip')})`}>
-        <circle cx="76" cy="40" r="32" fill="#4C1D95" opacity="0.32" />
+        <circle cx="76" cy="40" r="32" fill="#12151F" opacity="0.38" />
         <ellipse cx="38" cy="34" rx="15" ry="9" fill="#fff" opacity="0.2" transform="rotate(-28 38 34)" />
         {/* soft bounce light from below so she reads as glowing, not flat */}
         <rect x="16" y="54" width="76" height="40" fill={`url(#${id('glow')})`} />
@@ -152,6 +152,6 @@ const FACES = {
     ),
     noBlink: true,
     mouth: <circle cx="54" cy="70" r="4" fill="#1A1523" fillOpacity="0.5" />,
-    extra: <text x="78" y="34" fontSize="14" fill="#A78BFA" className="mascot__zzz">z</text>,
+    extra: <text x="78" y="34" fontSize="14" fill="#625E55" className="mascot__zzz">z</text>,
   },
 };
