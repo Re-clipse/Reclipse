@@ -5,16 +5,40 @@ import { supabase } from '@/lib/supabaseClient';
 import { getArchivePrice, formatArchivePrice } from '@/lib/archive';
 import SwipeDeck from '@/components/home/SwipeDeck';
 import ClozeTry from '@/components/home/ClozeTry';
-import ForgettingCurve from '@/components/home/ForgettingCurve';
+import MemoryCards from '@/components/home/MemoryCards';
+import StickyNotes from '@/components/home/StickyNotes';
+import FlowThread from '@/components/home/FlowThread';
 
-const NOTES = [
-  { color: 'hl',   t: 'Mock exams', d: 'Mix questions from several decks into one timed exam.' },
-  { color: 'pink', t: 'Photos of notes', d: 'Handwriting and whiteboards work. Snap it, check it, generate.' },
-  { color: 'mint', t: 'Exam and lab reminders', d: 'Upload a syllabus. Get an email before every graded date.' },
-  { color: 'sky',  t: 'Study with friends', d: 'Send a classmate a copy, or build one deck together.' },
-  { color: 'hl',   t: 'Lab Prep', tag: 'Plus', d: 'Work through lab-style practice problems in a guided chat.' },
-  { color: 'pink', t: 'Take it anywhere', d: 'Export any deck to CSV, Anki or Quizlet.' },
-];
+// Curved hand-off between sections, filled with the colour of the next one,
+// so the page reads as one surface instead of stacked blocks.
+function Wave({ to, flip }) {
+  return (
+    <svg className={`wave${flip ? ' wave--flip' : ''}`} viewBox="0 0 1440 90" preserveAspectRatio="none" aria-hidden="true">
+      <path d="M0,46 C220,92 420,6 720,40 C1010,72 1210,8 1440,38 L1440,90 L0,90 Z" style={{ fill: `var(--${to})` }} />
+    </svg>
+  );
+}
+
+// Faint chalk doodles on the board: the kind of thing left over from a lecture.
+function ChalkDoodles() {
+  return (
+    <svg className="chalk" viewBox="0 0 1200 640" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+      <g className="chalk__ink">
+        <text x="70" y="110">ATP → energy</text>
+        <text x="830" y="90">supply ↑ price ↓</text>
+        <text x="980" y="560">1867</text>
+        <text x="120" y="590">recall &gt; reread</text>
+        <text x="560" y="610">day 1 · 6 · 15</text>
+        <path d="M60 128 q90 12 190 -4" />
+        <path d="M820 300 c40 -60 120 -60 160 0 s120 60 160 0" />
+        <circle cx="1020" cy="548" r="46" />
+        <path d="M1060 200 l60 0 m-12 -10 l12 10 -12 10" />
+        <path d="M300 300 l0 160 l220 0" />
+        <path d="M300 440 c50 -10 90 -90 140 -120 s60 -10 80 -8" />
+      </g>
+    </svg>
+  );
+}
 
 export default function Home() {
   const [signedIn, setSignedIn] = useState(false);
@@ -28,91 +52,88 @@ export default function Home() {
   const start = signedIn ? '/upload' : '/login?mode=signup';
   const startLabel = signedIn ? 'Make a new deck' : 'Make a deck from your notes';
 
+  const notes = [
+    { color: 'hl',   t: 'Mock exams', d: 'Mix questions from several decks into one timed exam.' },
+    { color: 'pink', t: 'Photos of notes', d: 'Handwriting and whiteboards work. Snap it, check it, generate.' },
+    { color: 'mint', t: 'Exam and lab reminders', d: 'Upload a syllabus. Get an email before every graded date.' },
+    { color: 'sky',  t: 'Study with friends', d: 'Send a classmate a copy, or build one deck together.' },
+    { color: 'hl',   t: 'Lab Prep', tag: 'Plus', d: 'Work through lab-style practice problems in a guided chat.' },
+    { color: 'pink', t: 'Take it anywhere', d: 'Export any deck to CSV, Anki or Quizlet.' },
+    { color: 'mint', t: 'Campus Archive', tag: price ? formatArchivePrice(price) : 'Soon',
+      d: price ? <>Study sets other Laurier students have shared. <a href="/archive">Browse it</a>.</> : 'Study sets shared by other Laurier students.' },
+  ];
+
   return (
-    <main className="h2o">
-      {/* HERO: graph paper, poster headline, a deck you can actually study */}
-      <header className="h2o-hero">
-        <div className="h2o-wrap h2o-hero__grid">
-          <div className="h2o-hero__copy">
-            <p className="h2o-kicker">Made at Wilfrid Laurier University</p>
-            <h1 className="h2o-display">
-              Turn this week&apos;s lecture into <span className="h2o-mark">flashcards</span>.
+    <main className="fl">
+      <FlowThread />
+
+      {/* 1. The board: where every lecture starts */}
+      <header className="fl-board fl-hero">
+        <ChalkDoodles />
+        <div className="fl-wrap fl-hero__grid">
+          <div>
+            <h1 className="fl-display">
+              Turn this week&apos;s lecture into <span className="fl-mark">flashcards</span>.
             </h1>
-            <p className="h2o-lede">
+            <p className="fl-lede">
               Upload a PDF, a photo of the whiteboard, or pasted notes. Reclipse writes the cards
               and a practice quiz, then brings each card back right before you&apos;d forget it.
             </p>
-            <div className="h2o-actions">
-              <a href={start} className="h2o-btn h2o-btn--ink">{startLabel}</a>
+            <div className="fl-actions">
+              <a href={start} className="fl-btn fl-btn--hl">{startLabel}</a>
               {signedIn
-                ? <a href="/decks" className="h2o-link">Go to my decks</a>
-                : <a href="/demo" className="h2o-link">Try it without an account</a>}
+                ? <a href="/decks" className="fl-link">Go to my decks</a>
+                : <a href="/demo" className="fl-link">Try it without an account</a>}
             </div>
-            <p className="h2o-fine">Free while we launch. No credit card.</p>
+            <p className="fl-fine">Free while we launch. No credit card.</p>
           </div>
-          <div className="h2o-hero__deck">
-            <span className="h2o-hand h2o-hand--deck" aria-hidden="true">go on, swipe one</span>
+          <div className="fl-hero__deck" data-thread="center">
+            <span className="fl-hand fl-hand--deck" aria-hidden="true">go on, swipe one</span>
             <SwipeDeck />
           </div>
         </div>
+        <Wave to="cream" />
       </header>
 
-      {/* TRY IT: yellow band */}
-      <section className="h2o-band h2o-band--yellow">
-        <div className="h2o-wrap">
-          <div className="h2o-head">
-            <span className="h2o-num">01</span>
-            <h2 className="h2o-h2">Try it with a line from your notes.</h2>
-          </div>
+      {/* 2. Your notes become cards */}
+      <section className="fl-sec fl-sec--cream">
+        <div className="fl-wrap">
+          <p className="fl-step" data-thread="left">Step 1 · your notes</p>
+          <h2 className="fl-h2">Paste a line from your notes. Watch it turn into a card.</h2>
           <ClozeTry />
         </div>
+        <Wave to="butter" />
       </section>
 
-      {/* WHY IT WORKS: cobalt band */}
-      <section className="h2o-band h2o-band--cobalt">
-        <div className="h2o-wrap">
-          <div className="h2o-head">
-            <span className="h2o-num">02</span>
-            <h2 className="h2o-h2">You forget most of a lecture in a day. Reviews fix that.</h2>
-          </div>
-          <p className="h2o-sub">
-            Drag through the month. Each time you review a card, it sticks longer, so the next
-            review can wait. Reclipse schedules all of it for you.
-          </p>
-          <ForgettingCurve />
+      {/* 3. The cards stick */}
+      <section className="fl-sec fl-sec--butter">
+        <div className="fl-wrap">
+          <p className="fl-step">Step 2 · your memory</p>
+          <h2 className="fl-h2" data-thread="right">Then Reclipse makes sure it sticks until the exam.</h2>
+          <p className="fl-sub">Slide the exam date. Each review pushes forgetting further away, and Reclipse schedules every one for you.</p>
+          <MemoryCards />
         </div>
+        <Wave to="cream" />
       </section>
 
-      {/* EVERYTHING ELSE: sticky notes */}
-      <section className="h2o-band h2o-band--paper">
-        <div className="h2o-wrap">
-          <div className="h2o-head">
-            <span className="h2o-num">03</span>
-            <h2 className="h2o-h2">Also on the desk.</h2>
-          </div>
-          <div className="h2o-notes">
-            {NOTES.map((n, i) => (
-              <div key={n.t} className={`h2o-note h2o-note--${n.color}`} style={{ '--tilt': `${[-2, 1.5, -1, 2, -1.5, 1][i]}deg` }}>
-                <h3>{n.t}{n.tag && <span className="h2o-note__tag">{n.tag}</span>}</h3>
-                <p>{n.d}</p>
-              </div>
-            ))}
-            <div className="h2o-note h2o-note--mint" style={{ '--tilt': '-0.5deg' }}>
-              <h3>Campus Archive{price && <span className="h2o-note__tag">{formatArchivePrice(price)}</span>}</h3>
-              <p>
-                {price
-                  ? <>Study sets other Laurier students have shared. <a href="/archive">Browse it</a>.</>
-                  : 'Study sets shared by other Laurier students. Coming soon.'}
-              </p>
-            </div>
-          </div>
+      {/* 4. Everything else */}
+      <section className="fl-sec fl-sec--cream">
+        <div className="fl-wrap">
+          <p className="fl-step" data-thread="left">Also on the desk</p>
+          <h2 className="fl-h2">Everything else you&apos;ll use before an exam.</h2>
+          <span className="fl-hand fl-hand--notes" aria-hidden="true">drag them around</span>
+          <StickyNotes notes={notes} />
         </div>
+        <Wave to="board" />
       </section>
 
-      {/* RESEARCH + CTA: ink band */}
-      <section className="h2o-band h2o-band--ink">
-        <div className="h2o-wrap h2o-end">
-          <figure className="h2o-quote">
+      {/* 5. Back to the board, your turn */}
+      <section className="fl-board fl-end">
+        <div className="fl-wrap fl-end__inner">
+          <h2 className="fl-display fl-display--sm" data-thread="center">Bring this week&apos;s notes.</h2>
+          <a href={start} className="fl-btn fl-btn--hl">{startLabel}</a>
+          <span className="fl-hand fl-hand--end" aria-hidden="true">about a minute, start to finish</span>
+          <figure className="fl-quote">
             <blockquote>
               Students who practiced recalling a text remembered more of it a week later than
               students who made concept maps from it.
@@ -121,11 +142,6 @@ export default function Home() {
               Karpicke &amp; Blunt, <a href="https://doi.org/10.1126/science.1199327" target="_blank" rel="noopener">Science (2011)</a>
             </figcaption>
           </figure>
-          <div className="h2o-end__cta">
-            <h2 className="h2o-display h2o-display--sm">Bring this week&apos;s notes.</h2>
-            <a href={start} className="h2o-btn h2o-btn--yellow">{startLabel}</a>
-            <span className="h2o-hand h2o-hand--end" aria-hidden="true">about a minute, start to finish</span>
-          </div>
         </div>
       </section>
     </main>

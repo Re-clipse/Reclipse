@@ -40,7 +40,7 @@ export default function SwipeDeck() {
     if (fly) return;
     start.current = { x: e.clientX, y: e.clientY };
     moved.current = false;
-    e.currentTarget.setPointerCapture?.(e.pointerId);
+    try { e.currentTarget.setPointerCapture(e.pointerId); } catch {} // not supported everywhere; dragging still works without it
     setDrag({ x: 0, y: 0, active: true });
   }
   function onPointerMove(e) {
