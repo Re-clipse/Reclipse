@@ -1,6 +1,7 @@
 import pdfParse from 'pdf-parse';
 import Anthropic from '@anthropic-ai/sdk';
 import { supabaseFromRequest } from '@/lib/supabaseServer';
+import { tidy, TRANSCRIBE_PROMPT } from '@/lib/extraction';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
@@ -12,19 +13,6 @@ const MAX_FILE_BYTES = 15 * 1024 * 1024;   // 15MB
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;   // Anthropic image limit
 const MAX_EXTRACTED_CHARS = 24000;
 const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-
-// PDF text layers come out padded with runs of spaces and blank lines. Left as
-// is, that padding is sent to the model as tokens you pay for and it makes the
-// notes harder to read in the textarea. Collapse it before either happens.
-function tidy(raw) {
-  return raw
-    .replace(/\r\n?/g, '\n')
-    .split('\n')
-    .map((line) => line.replace(/[ \t]+/g, ' ').trim())
-    .join('\n')
-    .replace(/\n{3,}/g, '\n\n')
-    .trim();
-}
 
 // pdf-parse has a reproducible cold-start bug: the very first call in a fresh
 // Node process throws "UnknownErrorException" while it lazily requires its
@@ -49,17 +37,7 @@ async function transcribeImage(buffer, mediaType) {
       role: 'user',
       content: [
         { type: 'image', source: { type: 'base64', media_type: mediaType, data: buffer.toString('base64') } },
-        {
-          type: 'text',
-          text: `Transcribe all the study material in this image into plain text.
-
-Keep the original structure: headings, bullet points, numbered lists, and any
-labelled diagram text. Expand common shorthand where the meaning is unambiguous.
-If part is genuinely illegible, write [illegible] rather than guessing — a wrong
-guess would end up in their flashcards as a fact.
-
-Output only the transcription, no preamble.`,
-        },
+        { type: 'text', text: TRANSCRIBE_PROMPT },
       ],
     }],
   });

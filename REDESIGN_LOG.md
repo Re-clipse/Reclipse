@@ -831,3 +831,20 @@ buttons, em dashes everywhere, generic buzzword copy, low-contrast dark mode.
   grade buttons work. Login checked at narrow width.
 - Not yet reviewed screen by screen: the logged-in app pages. They inherit the
   new tokens, but page-specific leftovers may remain.
+
+## Upload-first homepage (Oct 2026)
+
+### The upload and generation journey, as inspected
+1. Every upload button goes to `/upload` (via `/login?mode=signup&next=/upload` when signed out; `/upload` requires an account).
+2. The student picks **one** file: PDF or .txt up to 15 MB, or a photo (JPG, PNG, WebP, GIF) up to 5 MB. `POST /api/extract-pdf` (login required) reads PDFs with pdf-parse and photos with Claude vision, and returns up to 24,000 characters of text.
+3. The text appears in an editable box (photos get a "check for misreads" note). The student can trim or fix it.
+4. `POST /api/generate` (login required) checks the plan's daily and monthly limits, then writes flashcards, a quiz and a summary with Claude. The browser saves the deck, cards and quiz to Supabase.
+5. The student lands on `/deck/[id]`: rename the deck, edit or delete cards and quiz questions, then study.
+
+There is no streaming progress, so the upload page shows only the stages it really has (reading the file, creating cards, saving). Cards don't store a link back to a page of the source notes, so the homepage's source comparison is labelled as illustrative.
+
+### What changed
+- `app/page.js` + `components/home/*` + `app/home.css`: new homepage ("Your notes. Ready to study.") with a hero demo that plays once (bundled PDF or photo → upload → highlight → card → deck), then becomes a working deck preview. It also has a passage-to-question section, a photo section and an editable example card. The demo cards are prepared ahead of time (`lib/homeExamples.json`), so viewing the page never calls the API.
+- `scripts/prepare-examples.mjs` regenerates those example cards through the real extraction and generation code (`lib/extraction.js` is now shared with `/api/extract-pdf`). The current examples were hand-written to the generation prompt, because no API key was available locally; rerun the script to replace them.
+- `/upload`: shows the selected file (thumbnail for photos), with Replace, Remove and Try again. It has a "Take a photo" camera button on touch devices and checks file type and size before uploading (`lib/uploadFiles.js`, mirroring the server limits). It shows real progress stages, guards against double submits, and uses accurate usage-limit copy.
+- `/deck/[id]?new=1`: a "your deck is ready" note with card and quiz counts, and the button now reads "Start studying".

@@ -1,0 +1,27 @@
+{
+  "generatedAt": null,
+  "model": null,
+  "note": "Prepared homepage examples. The economics deck is hand-written to the rules in lib/generationPrompt.js; the biology deck is hand-written from the definitions visible in the supplied notebook photo. Run `node scripts/prepare-examples.mjs` with ANTHROPIC_API_KEY in .env.local to see real pipeline output for the same files. `passage` is homepage-only: the source line each demo card is drawn from (for the photo, a key into PHOTO_MARKS).",
+  "pdf": {
+    "subject": "Economics",
+    "file": "/examples/economics-choices-and-tradeoffs.pdf",
+    "flashcards": [
+      { "question": "What is opportunity cost?", "answer": "The value of the next-best alternative you give up when making a choice.", "type": "basic", "passage": "Opportunity cost is the value of the next-best alternative forgone." },
+      { "question": "You spend an hour studying instead of taking your next-best option: a paid work shift. What is the opportunity cost?", "answer": "The earnings you give up from that work shift.", "type": "basic", "passage": "Opportunity cost is the value of the next-best alternative forgone." },
+      { "question": "What does scarcity mean in economics?", "answer": "Available resources are limited relative to people’s wants.", "type": "basic", "passage": "Scarcity means available resources are limited relative to people’s wants." },
+      { "question": "How can an incentive influence a decision?", "answer": "It changes the costs or benefits of an action, which can change what people choose.", "type": "basic", "passage": "An incentive changes the costs or benefits of an action and can influence decisions." },
+      { "question": "What does marginal thinking compare?", "answer": "The additional benefit and the additional cost of a choice.", "type": "basic", "passage": "Marginal thinking compares the additional benefit and additional cost of a choice." }
+    ]
+  },
+  "photo": {
+    "subject": "Biology",
+    "file": "/examples/biology-module1-notes.jpg",
+    "flashcards": [
+      { "question": "What does the cell membrane control?", "answer": "What enters and leaves the cell.", "type": "basic", "passage": "membrane" },
+      { "question": "What is an organelle?", "answer": "A specialized structure inside a cell that performs a specific function.", "type": "basic", "passage": "organelle" },
+      { "question": "What does the nucleus contain?", "answer": "The cell’s DNA.", "type": "basic", "passage": "nucleus" },
+      { "question": "What is the cytoplasm?", "answer": "Everything inside the cell membrane except the nucleus.", "type": "basic", "passage": "cytoplasm" },
+      { "question": "A cell has no nucleus. Where is its DNA found?", "answer": "In the cytoplasm. It’s a prokaryote, which has no nucleus.", "type": "basic", "passage": "prokaryote" }
+    ]
+  }
+}

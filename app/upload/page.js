@@ -7,8 +7,11 @@ import { Suspense } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { useAuth } from '@/lib/useAuth';
 import Mascot from '@/components/Mascot';
+import { ACCEPT, checkFile, fileKind } from '@/lib/uploadFiles';
 
 const MAX_CHARS = 24000;
+const formatSize = (b) => (b < 1024 * 1024 ? `${Math.max(1, Math.round(b / 1024))} KB` : `${(b / 1024 / 1024).toFixed(1)} MB`);
+
 function UploadInner() {
   const router = useRouter();
   const params = useSearchParams();
@@ -16,13 +19,19 @@ function UploadInner() {
   const onboarding = params.get('onboarding') === '1';
   const { user, loading: authLoading } = useAuth();
   const inputRef = useRef(null);
+  const cameraRef = useRef(null);
+  const submitting = useRef(false); // blocks a double-click from starting two generations
 
   const [title, setTitle] = useState('');
   const [text, setText] = useState('');
-  const [fileName, setFileName] = useState('');
+  const [file, setFile] = useState(null);
+  const [preview, setPreview] = useState('');
+  const [readFailed, setReadFailed] = useState(false);
+  const [textFromFile, setTextFromFile] = useState(false);
   const [dragging, setDragging] = useState(false);
   const [extracting, setExtracting] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [stage, setStage] = useState('creating'); // 'creating' | 'saving' while loading
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [courses, setCourses] = useState([]);
@@ -34,32 +43,50 @@ function UploadInner() {
     supabase.from('courses').select('*').order('name').then(({ data }) => setCourses(data || []));
   }, [user]);
 
-  async function readFile(file) {
-    if (!file) return;
-    setFileName(file.name); setError(''); setNotice(''); setExtracting(true);
+  // Free the thumbnail's memory when it's replaced or the page closes.
+  useEffect(() => () => { if (preview) URL.revokeObjectURL(preview); }, [preview]);
+
+  async function readFile(picked) {
+    if (!picked || extracting) return;
+    setError(''); setNotice(''); setReadFailed(false);
+    const problem = checkFile(picked);
+    if (problem) { setError(problem); return; } // keeps whatever file was already selected
+    setFile(picked);
+    setPreview(fileKind(picked) === 'image' ? URL.createObjectURL(picked) : '');
+    setExtracting(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) { router.replace('/login?next=/upload'); return; }
       const body = new FormData();
-      body.append('file', file);
+      body.append('file', picked);
       const res = await fetch('/api/extract-pdf', {
         method: 'POST', body, headers: { Authorization: `Bearer ${session.access_token}` },
       });
-      const data = await res.json();
-      if (!res.ok) { setError(data.error || 'Could not read that file.'); setFileName(''); return; }
-      setText(data.text);
-      if (data.source === 'image') setNotice('Read from your photo. Check the text below for anything mis-transcribed before generating.');
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data) { setError(data?.error || 'Could not read that file.'); setReadFailed(true); return; }
+      setText(data.text); setTextFromFile(true);
+      if (data.source === 'image') setNotice('Read from your photo. Check the text below for anything misread before you make cards.');
       else if (data.truncated) setNotice('That file was long, so we used the first part. Trim the text below to focus on a section.');
-      if (!title) setTitle(file.name.replace(/\.(pdf|txt|jpe?g|png|webp|gif)$/i, ''));
+      if (!title) setTitle(picked.name.replace(/\.(pdf|txt|jpe?g|png|webp|gif)$/i, ''));
     } catch {
-      setError('Could not read that file. Try pasting the text instead.'); setFileName('');
+      setError('Could not reach the server to read that file. Check your connection and try again.'); setReadFailed(true);
     } finally { setExtracting(false); }
+  }
+
+  function removeFile() {
+    setFile(null); setPreview(''); setReadFailed(false); setError(''); setNotice('');
+    if (textFromFile) { setText(''); setTextFromFile(false); }
+    if (inputRef.current) inputRef.current.value = '';
+    if (cameraRef.current) cameraRef.current.value = '';
   }
 
   async function handleGenerate(e) {
     e.preventDefault();
+    if (submitting.current || extracting) return;
     setError('');
     if (text.trim().length < 50) { setError('Add a bit more text first. We need a few sentences.'); return; }
+    submitting.current = true;
+    setStage('creating');
     setLoading(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -94,6 +121,7 @@ function UploadInner() {
         return;
       }
 
+      setStage('saving');
       const { data: deck, error: deckError } = await supabase.from('decks').insert({
         user_id: session.user.id,
         title: title.trim() || 'Untitled deck',
@@ -127,11 +155,11 @@ function UploadInner() {
         if (quizSaved) router.push(`/quiz?deck=${deck.id}&onboarding=1`);
         else router.push('/decks'); // no quiz came back — skip step 3 rather than dead-end
       } else {
-        router.push(`/deck/${deck.id}`);
+        router.push(`/deck/${deck.id}?new=1`);
       }
     } catch {
       setError('We generated your set but could not save it. Please try again.');
-    } finally { setLoading(false); }
+    } finally { setLoading(false); submitting.current = false; }
   }
 
   if (authLoading) return <main className="page"><div className="skeleton" style={{ height: 420 }} /></main>;
@@ -144,9 +172,15 @@ function UploadInner() {
             <Mascot mood="thinking" size={100} float />
           </div>
           <h2 style={{ fontSize: 'var(--text-xl)' }}>Building your study set</h2>
-          <p className="working__step" style={{ marginTop: 'var(--s-3)' }}>
-            Reading your notes and writing scenario-based cards and a quiz. Usually well under a
-            minute, occasionally a bit longer if it needs a second pass.
+          <ol className="up-stages" aria-label="Progress">
+            <li className="is-done">Notes ready</li>
+            <li className={stage === 'creating' ? 'is-on' : 'is-done'} aria-current={stage === 'creating' ? 'step' : undefined}>Creating flashcards and a quiz</li>
+            <li className={stage === 'saving' ? 'is-on' : ''} aria-current={stage === 'saving' ? 'step' : undefined}>Saving your deck</li>
+          </ol>
+          <p className="working__step" role="status" style={{ marginTop: 'var(--s-3)' }}>
+            {stage === 'creating'
+              ? 'This usually takes under a minute. Please keep this page open.'
+              : 'Almost there.'}
           </p>
         </div>
       </main>
@@ -201,43 +235,70 @@ function UploadInner() {
           </div>
 
           {mode === 'file' && (
-            // role="button" (it's a click/keyboard-activatable file picker) takes
-            // priority over tabpanel here — the id is enough for the tab's
-            // aria-controls to point somewhere real.
-            <div
-              id="up-drop"
-              className={`drop${dragging ? ' drop--active' : ''}${fileName && !extracting ? ' drop--done' : ''}`}
-              onClick={() => inputRef.current?.click()}
-              onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
-              onDragLeave={() => setDragging(false)}
-              onDrop={(e) => { e.preventDefault(); setDragging(false); readFile(e.dataTransfer.files?.[0]); }}
-              role="button" tabIndex={0}
-              onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && inputRef.current?.click()}
-            >
-              <input ref={inputRef} type="file" accept=".pdf,.txt,image/*" hidden
-                     onChange={(e) => readFile(e.target.files?.[0])} />
-              <div>
-                <div className="drop__icon drop__icon--tile">
-                  {extracting ? <span className="spinner spinner--ink" style={{ width: 26, height: 26 }} /> : (
-                    <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                         strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                      <path d="m7 10 5-5 5 5" /><path d="M12 5v12" />
-                    </svg>
-                  )}
+            <div id="up-drop" className="up-pick"
+                 onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+                 onDragLeave={() => setDragging(false)}
+                 onDrop={(e) => { e.preventDefault(); setDragging(false); readFile(e.dataTransfer.files?.[0]); }}>
+              <input ref={inputRef} type="file" accept={ACCEPT} hidden onChange={(e) => readFile(e.target.files?.[0])} />
+              {/* Opens the rear camera on phones; the picture comes back as a normal JPEG. */}
+              <input ref={cameraRef} type="file" accept="image/*" capture="environment" hidden onChange={(e) => readFile(e.target.files?.[0])} />
+
+              {!file ? (
+                // role="button": a click/keyboard-activatable file picker.
+                <div className={`drop${dragging ? ' drop--active' : ''}`} role="button" tabIndex={0}
+                     aria-describedby="up-limits"
+                     onClick={() => inputRef.current?.click()}
+                     onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); inputRef.current?.click(); } }}>
+                  <div>
+                    <div className="drop__icon drop__icon--tile">
+                      <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                           strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                        <path d="m7 10 5-5 5 5" /><path d="M12 5v12" />
+                      </svg>
+                    </div>
+                    <div className="drop__title">Drop a PDF or photo here, or click to choose</div>
+                    <div className="drop__chips" aria-hidden="true">
+                      <span className="drop__chip">PDF</span>
+                      <span className="drop__chip">Photo</span>
+                      <span className="drop__chip">Text</span>
+                    </div>
+                  </div>
                 </div>
-                <div className="drop__title">
-                  {extracting ? 'Reading your file…' : fileName ? `Loaded: ${fileName}` : 'Drop a file here, or click to browse'}
+              ) : (
+                <div className={`up-file${dragging ? ' up-file--drag' : ''}`}>
+                  {preview
+                    // eslint-disable-next-line @next/next/no-img-element
+                    ? <img src={preview} alt="" className="up-file__thumb" />
+                    : <span className="up-file__badge" aria-hidden="true">{fileKind(file) === 'pdf' ? 'PDF' : 'TXT'}</span>}
+                  <div className="up-file__meta">
+                    <strong>{file.name}</strong>
+                    <span role="status">
+                      {formatSize(file.size)} · {extracting
+                        ? (fileKind(file) === 'image' ? 'Uploading and reading your photo…' : 'Uploading and reading your file…')
+                        : readFailed ? 'Couldn’t read this file' : 'Text ready below'}
+                    </span>
+                  </div>
+                  <div className="up-file__tools">
+                    {extracting
+                      ? <span className="spinner spinner--ink" style={{ width: 22, height: 22 }} aria-hidden="true" />
+                      : (
+                        <>
+                          {readFailed && <button type="button" className="btn btn--primary" onClick={() => readFile(file)}>Try again</button>}
+                          <button type="button" className="btn btn--ghost" onClick={() => inputRef.current?.click()}>Replace</button>
+                          <button type="button" className="btn btn--quiet" onClick={removeFile} aria-label={`Remove ${file.name}`}>Remove</button>
+                        </>
+                      )}
+                  </div>
                 </div>
-                <div className="drop__chips" aria-hidden="true">
-                  <span className="drop__chip">PDF</span>
-                  <span className="drop__chip">Text</span>
-                  <span className="drop__chip">Photo</span>
-                </div>
-                <div className="drop__hint">
-                  {fileName && !extracting ? 'Click to replace it.'
-                    : 'PDF, text file, or a photo of handwritten notes or a whiteboard.'}
-                </div>
+              )}
+
+              <div className="up-pick__row">
+                <button type="button" className="btn btn--ghost up-camera" onClick={() => cameraRef.current?.click()} disabled={extracting}>Take a photo</button>
+                <p id="up-limits" className="small muted">
+                  One file at a time. PDF or .txt up to 15 MB; photos (JPG, PNG, WebP, GIF) up to 5 MB.
+                  For photos, use a clear photo with the whole page in frame.
+                </p>
               </div>
             </div>
           )}
@@ -257,12 +318,12 @@ function UploadInner() {
           {error && <div role="alert" className="alert alert--error">{error}</div>}
 
           <div className="up-actions">
-            <button type="submit" className="btn btn--primary btn--lg" disabled={extracting}>
+            <button type="submit" className="btn btn--primary btn--lg" disabled={extracting || loading}>
               Generate flashcards &amp; quiz
             </button>
             <a href="/decks" className="btn btn--ghost btn--lg">Cancel</a>
           </div>
-          <p className="small muted">Up to 5 study sets per day. You&apos;ll get a clear message here if you hit the limit, and it resets the next day.</p>
+          <p className="small muted">Daily and monthly limits depend on your plan. If you reach one, you&apos;ll see a message here saying when it resets.</p>
         </form>
 
         <aside className="card up-side">

@@ -37,6 +37,8 @@ export default function DeckPage() {
   const [collabCount, setCollabCount] = useState(0);
   const [quizQuestions, setQuizQuestions] = useState([]);
   const [quizLoaded, setQuizLoaded] = useState(false);
+  const [fresh, setFresh] = useState(false); // just generated: arrived from /upload with ?new=1
+  useEffect(() => { setFresh(new URLSearchParams(window.location.search).get('new') === '1'); }, []);
   const [editingQuiz, setEditingQuiz] = useState(null); // quiz question being edited
   const [addingQuiz, setAddingQuiz] = useState(false);
   const [sessions, setSessions] = useState([]);
@@ -268,10 +270,17 @@ export default function DeckPage() {
           <p>{cards.length} cards · {quizCount} quiz questions</p>
         </div>
         <div className="row">
-          <a href={`/study?deck=${id}`} className="btn btn--primary">Study</a>
+          <a href={`/study?deck=${id}`} className="btn btn--primary">Start studying</a>
           {quizCount > 0 && <a href={`/quiz?deck=${id}`} className="btn btn--ghost">Quiz</a>}
         </div>
       </div>
+
+      {fresh && cards.length > 0 && (
+        <div className="alert alert--note u-mt-4" role="status">
+          <strong>Your deck is ready: {cards.length} cards{quizCount ? ` and ${quizCount} quiz questions` : ''}.</strong>{' '}
+          Look them over below. Edit or delete any card (changes save when you confirm them), rename the deck by clicking its title, then start studying.
+        </div>
+      )}
 
       {showInvite && (
         <div className="card u-mt-4" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--s-4)', flexWrap: 'wrap' }}>
