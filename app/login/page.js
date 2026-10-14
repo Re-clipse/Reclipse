@@ -173,18 +173,18 @@ function LoginInner() {
         <div className="auth__banner">
           <div className="auth__glow auth__glow--sm" aria-hidden="true" />
           <Mascot mood={isSignup ? 'excited' : 'happy'} size={56} />
-          <strong>Study less. Remember more.</strong>
+          <strong>Bring this week&apos;s notes.</strong>
         </div>
 
         <div className="auth__body">
-          <h1 className="auth__headline">Study less.<br />Remember more.</h1>
-          <p className="auth__pitch">Turn your lecture notes into flashcards and quizzes that make studying actually stick.</p>
+          <h1 className="auth__headline">Bring this week&apos;s notes.</h1>
+          <p className="auth__pitch">Reclipse writes the flashcards and a practice quiz. You do the remembering.</p>
           <div className="auth__luna">
             <div className="auth__glow" aria-hidden="true" />
-            <Mascot mood={isSignup ? 'excited' : 'happy'} size={190} float />
+            <Mascot mood={isSignup ? 'excited' : 'happy'} size={150} />
           </div>
           <ul className="auth__points">
-            {['Snap a photo of your notes', 'Cards in seconds', 'Spaced repetition built in'].map((t) => (
+            {['PDFs, photos of notes, or pasted text', 'Edit any card before you study it', 'Cards come back on a spaced schedule'].map((t) => (
               <li key={t}>
                 <span className="auth__check" aria-hidden="true">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>

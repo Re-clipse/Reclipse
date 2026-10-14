@@ -37,6 +37,8 @@ export default function DeckPage() {
   const [collabCount, setCollabCount] = useState(0);
   const [quizQuestions, setQuizQuestions] = useState([]);
   const [quizLoaded, setQuizLoaded] = useState(false);
+  const [fresh, setFresh] = useState(false); // just generated: arrived from /upload with ?new=1
+  useEffect(() => { setFresh(new URLSearchParams(window.location.search).get('new') === '1'); }, []);
   const [editingQuiz, setEditingQuiz] = useState(null); // quiz question being edited
   const [addingQuiz, setAddingQuiz] = useState(false);
   const [sessions, setSessions] = useState([]);
@@ -165,7 +167,7 @@ export default function DeckPage() {
     const { collab_id } = await toggleCollab();
     const link = `${window.location.origin}/collab/${collab_id}`;
     try { await navigator.clipboard?.writeText(link); } catch {}
-    toast('Invite link copied — send it to your classmates', 'success');
+    toast('Invite link copied. Send it to your classmates', 'success');
     dismissInvite();
   }
 
@@ -268,17 +270,24 @@ export default function DeckPage() {
           <p>{cards.length} cards · {quizCount} quiz questions</p>
         </div>
         <div className="row">
-          <a href={`/study?deck=${id}`} className="btn btn--primary">Study</a>
+          <a href={`/study?deck=${id}`} className="btn btn--primary">Start studying</a>
           {quizCount > 0 && <a href={`/quiz?deck=${id}`} className="btn btn--ghost">Quiz</a>}
         </div>
       </div>
+
+      {fresh && cards.length > 0 && (
+        <div className="alert alert--note u-mt-4" role="status">
+          <strong>Your deck is ready: {cards.length} cards{quizCount ? ` and ${quizCount} quiz questions` : ''}.</strong>{' '}
+          Look them over below. Edit or delete any card (changes save when you confirm them), rename the deck by clicking its title, then start studying.
+        </div>
+      )}
 
       {showInvite && (
         <div className="card u-mt-4" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--s-4)', flexWrap: 'wrap' }}>
           <div>
             <strong>{courseCode ? `Invite your ${courseCode} classmates` : 'Invite classmates to this deck'}</strong>
             <p className="small muted u-mt-1">
-              Turn on collaboration and share a link — anyone with it can add cards to this deck too.
+              Turn on collaboration and share a link. Anyone with it can add cards to this deck too.
             </p>
           </div>
           <div className="row">
@@ -413,7 +422,7 @@ export default function DeckPage() {
               <div>
                 <div className="u-fw-650">Share this deck</div>
                 <p className="small muted">
-                  Anyone with the link can view and copy it, no login needed — and it&apos;ll show up in
+                  Anyone with the link can view and copy it without logging in, and it&apos;ll show up in
                   {' '}<a href="/discover">Campus popular</a> once someone studies it.
                 </p>
               </div>
@@ -467,7 +476,7 @@ export default function DeckPage() {
               <div>
                 <div className="u-fw-650">Share in the Campus Archive</div>
                 <p className="small muted">
-                  Different from Campus popular above — this lists your deck for paying Campus Archive
+                  Different from Campus popular above: this lists your deck for paying Campus Archive
                   members to study. You don&apos;t set a price and don&apos;t get paid for it.
                 </p>
               </div>
@@ -583,7 +592,7 @@ function QuizModal({ question, onCancel, onSave }) {
                     onChange={(e) => setQ(e.target.value)} autoFocus />
         </div>
         <div className="field">
-          <label className="label" id="quiz-options-label">Options — select the correct one</label>
+          <label className="label" id="quiz-options-label">Options (select the correct one)</label>
           <div className="stack" style={{ gap: 'var(--s-2)' }} role="radiogroup" aria-labelledby="quiz-options-label">
             {options.map((opt, i) => (
               <div key={i} className="row" style={{ gap: 'var(--s-2)', alignItems: 'center' }}>

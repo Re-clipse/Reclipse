@@ -5,7 +5,7 @@
 
 export const metadata = {
   title: 'Cookie Policy',
-  description: 'What Reclipse stores in your browser, and why — we don’t use cookies or tracking.',
+  description: 'What Reclipse stores in your browser, and why. We don’t use cookies or tracking.',
 };
 
 export default function CookiesPage() {
@@ -27,8 +27,8 @@ export default function CookiesPage() {
         <section>
           <h2>What we do use</h2>
           <p>
-            Your browser&apos;s local storage — not a cookie, and not sent to us automatically the way a
-            cookie is — holds a few small things: your sign-in session, your light/dark theme choice, a
+            Your browser&apos;s local storage (not a cookie, and not sent to us automatically the way a
+            cookie is) holds a few small things: your sign-in session, your light/dark theme choice, a
             friend&apos;s referral code if you followed an invite link before signing up, your sound
             on/off preference, and your study streak/progress stats for the in-app achievements. All of
             it stays on your device, is strictly necessary for the app to function or remember a choice
@@ -40,7 +40,7 @@ export default function CookiesPage() {
           <h2>Third parties</h2>
           <p>
             We don&apos;t run any analytics, advertising, or tracking scripts. The only third-party
-            services involved are our infrastructure providers (Supabase, Anthropic, Stripe, Resend) —
+            services involved are our infrastructure providers (Supabase, Anthropic, Stripe, Resend);
             see our <a href="/privacy">Privacy Policy</a> for what each one does.
           </p>
         </section>

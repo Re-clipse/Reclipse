@@ -47,7 +47,7 @@ export default function LabRemindersModal({ initialStep, labs, courses, onClose,
       .filter((r) => r.course_code);
     if (!toSave.length) { setError('Add at least one course code.'); return; }
     const missingEndDate = toSave.find((r) => !r.ends_on);
-    if (missingEndDate) { setError('Set an end date for each lab — when does the term end?'); return; }
+    if (missingEndDate) { setError('Set an end date for each lab. When does the term end?'); return; }
 
     setAdding(true);
     const { data: { user } } = await supabase.auth.getUser();
@@ -95,7 +95,7 @@ export default function LabRemindersModal({ initialStep, labs, courses, onClose,
           <p>Would you like study reminders when you have labs due?</p>
           <p className="small muted">
             Syllabus dates cover exams and assignments, but labs usually aren&apos;t listed with a
-            specific date — this adds a weekly reminder instead, the day before each one.
+            specific date. This adds a weekly reminder instead, the day before each one.
           </p>
           <div className="row">
             <button className="btn btn--primary" onClick={() => setStep('manage')}>Yes, add my labs</button>
@@ -115,7 +115,7 @@ export default function LabRemindersModal({ initialStep, labs, courses, onClose,
             {labs.map((lab) => (
               <div key={lab.id} className="card row" style={{ opacity: lab.active ? 1 : 0.5 }}>
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: 600 }}>{lab.course_code}{lab.course_name ? ` — ${lab.course_name}` : ''}</div>
+                  <div style={{ fontWeight: 600 }}>{lab.course_code}{lab.course_name ? ` · ${lab.course_name}` : ''}</div>
                   <div className="small muted">
                     Every {WEEKDAYS[lab.weekday]}{lab.time ? ` at ${lab.time}` : ''} · until {lab.ends_on}
                   </div>

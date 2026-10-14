@@ -27,7 +27,7 @@ export default function RefundPage() {
           </p>
           <p>
             Cancelling stops future billing. In the usual case you keep access through the end of the
-            period you&apos;ve already paid for, per our current billing settings — if that ever isn&apos;t
+            period you&apos;ve already paid for, per our current billing settings. If that ever isn&apos;t
             how it works when you cancel, contact us. Either way, we don&apos;t provide partial refunds
             for time remaining in a billing period, except where required by law.
           </p>
@@ -36,15 +36,15 @@ export default function RefundPage() {
         <section>
           <h2>Billing mistakes</h2>
           <p>
-            If you were charged in error — a duplicate charge, or a charge after you believe you
-            cancelled — contact us and we&apos;ll investigate and refund it if it was our mistake.
+            If you were charged in error (a duplicate charge, or a charge after you believe you
+            cancelled), contact us and we&apos;ll investigate and refund it if it was our mistake.
           </p>
         </section>
 
         <section>
           <h2>Referral discounts</h2>
           <p>
-            Referral rewards are a discount, not a cash refund, and aren&apos;t eligible for one — see
+            Referral rewards are a discount, not a cash refund, and aren&apos;t eligible for one. See
             our <a href="/terms">Terms</a> for how rewards are earned and issued.
           </p>
         </section>

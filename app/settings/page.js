@@ -292,7 +292,7 @@ export default function SettingsPage() {
         <div style={{ fontWeight: 650, marginBottom: 'var(--s-1)' }}>Reclipse Plus</div>
         <p className="small muted u-mb-3">
           {premiumRealSub === true
-            ? 'You’re subscribed — unlimited daily generations, a higher monthly card budget, and Lab Prep.'
+            ? 'You’re subscribed: unlimited daily generations, a higher monthly card budget, and Lab Prep.'
             : isLaunchTrialActive()
             ? 'You have full access for free during our launch period.'
             : 'Upgrade for unlimited daily generations, more flashcards a month, and the Lab Prep AI chat.'}
@@ -305,7 +305,7 @@ export default function SettingsPage() {
       <div className="card">
         <div style={{ fontWeight: 650, marginBottom: 'var(--s-1)' }}>Exam reminders by course</div>
         <p className="small muted u-mb-4">
-          When on, we email you before each saved exam, quiz or lab date — how many days ahead is set
+          When on, we email you before each saved exam, quiz or lab date. How many days ahead is set
           below, under &quot;Reminder emails&quot;. Add dates from the <a href="/syllabus">syllabus page</a>.
         </p>
         {courses.length === 0 ? (
@@ -328,7 +328,7 @@ export default function SettingsPage() {
       <div className="card u-mt-5">
         <div style={{ fontWeight: 650, marginBottom: 'var(--s-1)' }}>Reminder emails</div>
         <p className="small muted u-mb-4">
-          Controls the reminder emails below (course dates, study sessions, weekly digest) — not
+          Controls the reminder emails below (course dates, study sessions, weekly digest), not
           account emails like password resets. Detected timezone: {timezone}.
         </p>
         <div className="stack">
@@ -419,7 +419,7 @@ export default function SettingsPage() {
       <div className="card u-mt-5">
         <div style={{ fontWeight: 650, marginBottom: 'var(--s-1)' }}>Refer a friend</div>
         <p className="small muted u-mb-4">
-          Share your code with a friend. They enter it in the referral code field when they sign up —
+          Share your code with a friend. They enter it in the referral code field when they sign up,
           every friend who signs up permanently raises your monthly AI-generation limit by 5.
         </p>
         {refCode ? (
@@ -436,7 +436,7 @@ export default function SettingsPage() {
               <button type="button" className="btn btn--quiet" style={{ padding: 0, height: 'auto' }} onClick={copyRefLink}>
                 {copiedLink ? 'link copied' : 'sign-up link'}
               </button>{' '}
-              — it fills the code in for them automatically.
+              and it fills the code in for them automatically.
             </p>
           </>
         ) : (
@@ -464,7 +464,7 @@ export default function SettingsPage() {
       <div className="card u-mt-5" style={{ borderColor: '#FECACA' }}>
         <div className="u-fw-650" style={{ color: 'var(--error)' }}>Delete account</div>
         <p className="small muted u-mt-2 u-mb-4">
-          Permanently deletes your account and everything tied to it — decks, flashcards, study
+          Permanently deletes your account and everything tied to it: decks, flashcards, study
           history, course dates, and your <a href="/archive">Campus Archive</a> subscription
           (cancelled automatically). This can&apos;t be undone. See our{' '}
           <a href="/privacy">Privacy Policy</a> for details.

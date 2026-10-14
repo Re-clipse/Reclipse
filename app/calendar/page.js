@@ -47,7 +47,7 @@ function formatAgendaDate(dateStr) {
 }
 
 function courseAccentHex(courseColor, courseId) {
-  return ACCENTS[courseColor.get(courseId) || 'violet']?.solid || '#7C3AED';
+  return ACCENTS[courseColor.get(courseId) || 'violet']?.solid || '#3D4A6B';
 }
 
 export default function CalendarPage() {
@@ -218,7 +218,7 @@ export default function CalendarPage() {
   return (
     <main className="page">
       <PageHeader accent="indigo" icon={ICONS.calendar} title="Calendar"
-        subtitle="Your exam, quiz and lab dates — plus a spaced study plan leading up to each exam and quiz."
+        subtitle="Your exam, quiz and lab dates, plus a spaced study plan leading up to each exam and quiz."
         action={
           <div className="row">
             <button className="btn btn--quiet" onClick={() => setLabModalStep('manage')}>Lab reminders</button>

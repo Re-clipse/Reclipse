@@ -116,7 +116,7 @@ function ArchiveDeckInner() {
             <button className="btn btn--primary btn--block btn--lg u-mt-5"
                     onClick={subscribe} disabled={subscribing}>
               {subscribing && <span className="spinner" />}
-              {subscribing ? 'Opening checkout…' : price ? `Subscribe — ${formatArchivePrice(price)}` : 'Subscribe to unlock'}
+              {subscribing ? 'Opening checkout…' : price ? `Subscribe · ${formatArchivePrice(price)}` : 'Subscribe to unlock'}
             </button>
             <p className="small muted center u-mt-3">
               {price ? formatArchivePrice(price) : 'Monthly membership'} · cancel any time, access continues
@@ -129,7 +129,7 @@ function ArchiveDeckInner() {
       {justSubscribed && access && (
         <ReferralPrompt code={referral?.code} link={referral?.link}
           title="Know someone who'd want this too?"
-          note="Share your link — every friend who signs up raises your monthly AI-generation limit by 5." />
+          note="Share your link: every friend who signs up raises your monthly AI-generation limit by 5." />
       )}
 
       {preview.samples.length > 0 && (

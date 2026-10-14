@@ -5,24 +5,37 @@ import { test, expect } from '@playwright/test';
 // people to the right place."
 
 test.describe('landing page (signed out)', () => {
-  test('renders the hero and routes an unauthenticated visitor to sign up', async ({ page }) => {
+  test('renders the hero and sends upload buttons through sign-up to the real upload page', async ({ page }) => {
     await page.goto('/');
 
-    await expect(page.getByRole('heading', { name: /Study less\.\s*Remember more\./ })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Your notes\.\s*Ready to study\./ })).toBeVisible();
 
-    const getStarted = page.getByRole('link', { name: 'Get started free' }).first();
-    await expect(getStarted).toBeVisible();
-    await expect(getStarted).toHaveAttribute('href', '/login?mode=signup');
-
-    const haveAccount = page.getByRole('link', { name: 'I have an account' });
-    await expect(haveAccount).toHaveAttribute('href', '/login');
+    const uploads = page.getByRole('link', { name: 'Upload my notes' });
+    await expect(uploads.first()).toBeVisible();
+    for (const link of await uploads.all()) {
+      await expect(link).toHaveAttribute('href', '/login?mode=signup&next=/upload');
+    }
   });
 
-  test('links to the interactive demo, reachable with no login', async ({ page }) => {
+  test('the example can be skipped to working cards, with no upload or generation request', async ({ page }) => {
+    const calls = [];
+    page.on('request', (r) => { if (/\/api\/(generate|extract-pdf)/.test(r.url())) calls.push(r.url()); });
     await page.goto('/');
-    await page.getByRole('link', { name: 'try a 30-second demo' }).click();
-    await expect(page).toHaveURL(/\/demo$/);
-    await expect(page.getByRole('heading', { name: 'Try a flashcard' })).toBeVisible();
+    await page.getByRole('link', { name: 'Try an example' }).click();
+    const skip = page.getByRole('button', { name: 'Skip to cards' });
+    if (await skip.isVisible()) await skip.click();
+
+    const reveal = page.getByRole('button', { name: 'Reveal answer' }).first();
+    await reveal.click();
+    await expect(page.getByRole('button', { name: 'Show question' }).first()).toBeVisible();
+    await page.getByRole('button', { name: 'Next card' }).first().click();
+    await expect(page.getByLabel('Card 2 of 5').first()).toBeVisible();
+
+    await page.getByRole('button', { name: 'Photo of notes' }).click();
+    await expect(page.getByLabel('Card 1 of 5').first()).toBeVisible();
+    await page.getByRole('button', { name: 'About this demo' }).first().click();
+    await expect(page.getByText('Your files are processed when you upload them.')).toBeVisible();
+    expect(calls).toEqual([]);
   });
 
   test('navigating to the login page directly renders the auth form', async ({ page }) => {
